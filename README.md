@@ -94,7 +94,7 @@ By default, ``traverse`` chooses a constant direction vector ``c`` for you, whic
 
 ![Directional Fiber 2](https://cloud.githubusercontent.com/assets/6537102/21059295/bc75e58c-be0f-11e6-83e2-635b06f7b1e6.png)
 
-### Baseline solver
+### Baseline Solver
 
 As a baseline for comparison, ``rnn-fxpts`` also includes a Python port of a [more conventional approach](http://dx.doi.org/10.1162/NECO_a_00409), based on randomly seeded local optimization.  The optimization is designed to minimize the magnitude of the network update vector (i.e., ``np.tanh(W.dot(v))-v``), which will be zero at fixed points.  This method repeatedly samples and optimizes random seeds until reaching a user-specified timeout, which you can supply as a keyword argument (in seconds).
 
@@ -152,13 +152,13 @@ As for duplicates, the helper function ``get_unique_fxpts`` uses pair-wise compa
 5
 ```
 
-This workflow is automated by ``post_process_fxpts``:
+This workflow is automated by the helper function ``post_process_fxpts``:
 
 ```python
 unique_fxpts, _ = post_process_fxpts(W, pts)
 ```
 
-will do both refinement and duplicate removal in one function call.  This function also includes ``-fxpts`` in its output, since the fixed points of our network model always come in +/- pairs.  This same post-processing is also used by ``run_solver`` under the hood.  In principle, fiber traversal should encounter every fixed point at most once, obviating the need for duplicate removal.  However, for added redundancy, *three* fixed point seeds are actually refined at every step where ``fiber[N,:]`` changes sign:  the point on the fiber before the step, the point after the step, and a linear interpolant of the two.
+This function call will do both refinement and duplicate removal.  It also includes ``-fxpts`` in its output, since the fixed points of our network model always come in +/- pairs.  This same post-processing is also used by ``run_solver`` under the hood.  In principle, fiber traversal should encounter every fixed point at most once, obviating the need for duplicate removal.  However, for added redundancy, *three* fixed point seeds are actually refined at every step where ``fiber[N,:]`` changes sign:  the point on the fiber before the step, the point after the step, and a linear interpolant of the two.
 
 ## Documentation
 
@@ -173,11 +173,11 @@ and so on.
 
 For more information on algorithmic details and proofs, please consult the following:
 
-Katz, G. and Reggia, J. "Towards Global Solution of the Fixed Point Equations in Attractor Neural Networks," *submitted*, 2016. [TBA](https://github.com/garrettkatz/rnn-fxpts)
+Katz, G. and Reggia, J. "Towards Global Solution of the Fixed Point Equations in Attractor Neural Networks," *submitted*, 2016. [TBA](https://github.com/garrettkatz/rnn-fxpts#documentation)
 
-> *Supplemental Material*: Katz, G. and Reggia, J. "Identifying fixed points in attractor neural networks using directional fibers: Supplemental material on theoretical results and practical aspects of numerical traversal," University of Maryland, College Park, Tech. Rep. CS-TR-5051, December 2016. [TBA](https://github.com/garrettkatz/rnn-fxpts)
+> *Supplemental Material*: Katz, G. and Reggia, J. "Identifying fixed points in attractor neural networks using directional fibers: Supplemental material on theoretical results and practical aspects of numerical traversal," University of Maryland, College Park, Tech. Rep. CS-TR-5051, December 2016. [TBA](https://github.com/garrettkatz/rnn-fxpts#documentation)
 
-## Reproducing Experimental Results
+## Reproducing the Experimental Results
 
 This repository includes all of the code needed to reproduce the figures and results reported in the foregoing references.  To run all of the experiments, invoke the ``reproduce_results.py`` script from a command line terminal:
 
