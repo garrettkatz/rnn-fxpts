@@ -9,35 +9,35 @@ v = np.random.randn(N,1) # arbitrary neural state
 v_new = np.tanh(W.dot(v)) # activation rule
 
 N = 2
-# W = 1.25*np.eye(N) + 0.1*np.random.randn(N,N)
-# print('>>> W')
-# print(repr(W))
-# fxpts, _ = rfx.run_solver(W)
-# print('>>> fxpts')
-# print(repr(fxpts))
+W = 1.25*np.eye(N) + 0.1*np.random.randn(N,N)
+print('>>> W')
+print(repr(W))
+fxpts, _ = rfx.run_solver(W)
+print('>>> fxpts')
+print(repr(fxpts))
 
-# residual_error = np.tanh(W.dot(fxpts)) - fxpts
-# print('>>> residual_error')
-# print(repr(residual_error))
+residual_error = np.tanh(W.dot(fxpts)) - fxpts
+print('>>> residual_error')
+print(repr(residual_error))
 
-# is_fixed, error_margin = rfx.fixed_within_eps(W, fxpts)
-# print('>>> error_margin')
-# print(repr(error_margin))
-# print('>>> np.fabs(residual_error) < error_margin')
-# print(repr(np.fabs(residual_error) < error_margin))
-# print('>>> is_fixed')
-# print(repr(is_fixed))
+is_fixed, error_margin = rfx.fixed_within_eps(W, fxpts)
+print('>>> error_margin')
+print(repr(error_margin))
+print('>>> np.fabs(residual_error) < error_margin')
+print(repr(np.fabs(residual_error) < error_margin))
+print('>>> is_fixed')
+print(repr(is_fixed))
 
-# fxpts, fiber = rfx.run_solver(W)
-# print('>>> fiber[:,:10]')
-# print(repr(fiber[:,:10]))
+fxpts, fiber = rfx.run_solver(W)
+print('>>> fiber[:,:10]')
+print(repr(fiber[:,:10]))
 
-# rfx.show_fiber(W, fxpts, fiber)
-# # rfx.show_fiber(W, fxpts, fiber, savefile='dfiber1.png')
+rfx.show_fiber(W, fxpts, fiber)
+# rfx.show_fiber(W, fxpts, fiber, savefile='dfiber1.png')
 
-# fxpts, fiber = rfx.run_solver(W, c = np.ones((N,1)))
-# rfx.show_fiber(W, fxpts, fiber)
-# # rfx.show_fiber(W, fxpts, fiber, savefile='dfiber2.png')
+fxpts, fiber = rfx.run_solver(W, c = np.ones((N,1)))
+rfx.show_fiber(W, fxpts, fiber)
+# rfx.show_fiber(W, fxpts, fiber, savefile='dfiber2.png')
 
 W = 1.25*np.eye(N) + 0.1*np.random.randn(N,N)
 print('>>> W')
