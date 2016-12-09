@@ -155,7 +155,7 @@ As for duplicates, the helper function ``get_unique_fxpts`` uses pair-wise compa
 This workflow is automated by the helper function ``post_process_fxpts``:
 
 ```python
-unique_fxpts, _ = post_process_fxpts(W, pts)
+unique_fxpts, _ = rfx.post_process_fxpts(W, pts)
 ```
 
 This function call will do both refinement and duplicate removal.  It also includes ``-fxpts`` in its output, since the fixed points of our network model always come in +/- pairs.  This same post-processing is also used by ``run_solver`` under the hood.  In principle, fiber traversal should encounter every fixed point at most once, obviating the need for duplicate removal.  However, for added redundancy, *three* fixed point seeds are actually refined at every step where ``fiber[N,:]`` changes sign:  the point on the fiber before the step, the point after the step, and a linear interpolant of the two.
@@ -179,7 +179,7 @@ Katz, G. and Reggia, J. "Towards Global Solution of the Fixed Point Equations in
 
 ## Reproducing the Experimental Results
 
-This repository includes all of the code needed to reproduce the figures and results reported in the foregoing references.  To run all of the experiments, invoke the ``reproduce_results.py`` script from a command line terminal:
+This repository includes all of the code needed to reproduce the figures and results reported in the foregoing references.  To run all of the experiments, invoke the ``reproduce_results.py`` script from the command line:
 
 ```shell
 $ python reproduce_results.py
