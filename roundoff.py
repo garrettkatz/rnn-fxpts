@@ -188,8 +188,7 @@ def run_baseline_rd(test_data_id, Ns, num_procs):
     network_sizes, num_samples, _ = fe.load_test_data('%s.npz'%test_data_id)
     for (N, S) in zip(network_sizes, num_samples):
         if N not in Ns: continue
-        if N > 16: cap = None
-        else: cap = 20000
+        cap = 20000
         for s in range(S):
             logfilename = 'logs/baseline_rd_%s_N_%d_s_%d.log'%(test_data_id,N,s)
             pool_args.append((test_data_id,N,s,cap,logfilename))
@@ -256,8 +255,7 @@ def run_traverse_rd(test_data_id, Ns, num_procs):
     network_sizes, num_samples, _ = fe.load_test_data('%s.npz'%test_data_id)
     for (N,S) in zip(network_sizes, num_samples):
         if N not in Ns: continue
-        if N > 16: cap = None
-        else: cap = 20000
+        cap = 20000
         for s in range(S):
             logfilename = 'logs/traverse_rd_%s_N_%d_s_%d.log'%(test_data_id,N,s)
             pool_args.append((test_data_id,N,s,cap,logfilename))
@@ -285,7 +283,8 @@ def show_traverse_rd_fig(test_data_ids, Ns, samp_range):
             print('samp %d, N %d'%(samp,N))
             npz = np.load('results/traverse_rd_%s_N_%d_s_%d.npz'%(test_data_id,N,samp))
             in_rr, out_rr = npz['in_RR'], npz['out_RR']
-            in_rr[in_rr == 0] = in_rr[in_rr > 0].min()
+            if (in_rr > 0).any(): in_rr[in_rr == 0] = in_rr[in_rr > 0].min()
+            else: in_rr[in_rr == 0] = 2**(-30)
             ax = plt.subplot(len(samp_range),len(Ns),sp)
             sp += 1
             if out_rr.shape[0] > 0: plt.hist(np.log2(out_rr),bins=30,log=log,facecolor='k')
@@ -313,7 +312,8 @@ def show_baseline_rd_fig(test_data_ids, Ns, samp_range):
             print('samp %d, N %d'%(samp,N))
             npz = np.load('results/baseline_rd_%s_N_%d_s_%d.npz'%(test_data_id,N,samp))
             in_rr, out_rr = npz['in_RR'], npz['out_RR']
-            in_rr[in_rr == 0] = in_rr[in_rr > 0].min()
+            if (in_rr > 0).any(): in_rr[in_rr == 0] = in_rr[in_rr > 0].min()
+            else: in_rr[in_rr == 0] = 2**(-30)
             ax = plt.subplot(len(samp_range),len(Ns),sp)
             sp += 1
             if out_rr.shape[0] > 0: plt.hist(np.log2(out_rr),bins=30,log=log,facecolor='k')

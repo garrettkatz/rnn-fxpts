@@ -13,6 +13,50 @@
 
 `rnn-fxpts` isn't currently set up for automatic installation.  To use `rnn-fxpts`, simply [clone or download](https://help.github.com/articles/cloning-a-repository/) the repository into a directory of your choice.  You may wish to configure your environment so that `rnn-fxpts` is readily available in other directories and projects (e.g., add the directory you chose to your [PYTHONPATH](https://docs.python.org/2/using/cmdline.html#envvar-PYTHONPATH) environment variable).
 
+## Documentation
+
+[Basic usage](https://github.com/garrettkatz/rnn-fxpts#basic-usage) of ``rnn-fxpts`` is described below.  For full API documentation, you can use Python's built-in ``help`` function:
+
+```python
+>>> import rnn_fxpts
+>>> help(rnn_fxpts)
+>>> help(rnn_fxpts.run_solver)
+```
+and so on.
+
+For more information on algorithmic details and proofs, please consult the following:
+
+Katz, G. and Reggia, J. "Towards Global Solution of the Fixed Point Equations in Attractor Neural Networks," *submitted*, 2016. [TBA]()
+
+> *Supplemental Material*: Katz, G. and Reggia, J. "Identifying fixed points in attractor neural networks using directional fibers: Supplemental material on theoretical results and practical aspects of numerical traversal," University of Maryland, College Park, Tech. Rep. CS-TR-5051, December 2016. [TBA](https://github.com/garrettkatz/rnn-fxpts#documentation)
+
+## Reproducing the Experimental Results
+
+This repository includes all of the code needed to reproduce the figures and results reported in the foregoing references.  To run all of the experiments, invoke the ``reproduce_results.py`` script from the command line:
+
+```shell
+$ python reproduce_results.py
+```
+
+The script will prompt you to choose the number of processors to use, and one of three experimental scales:
+- **Full**: This option runs the experiments at full scale, using the same number of networks with the same sizes (up to ``N=128``) as reported in the papers.  This option is computationally expensive - on our workstation, using ten 3.5GHz Intel Xeon CPU cores, it ran for 50 hours, at times using upwards of 32GB of RAM, and ultimately saving almost 86GB of results to the hard-drive.  If you have more limited computational resources consider choosing the second option.
+- **Mini**: This option runs the experiments at reduced scale, using fewer networks limited to smaller sizes (up to ``N=64``).  This scale is more appropriate for personal computing resources - on one of our laptops, using four 2.4GHz Intel Core i7 CPU cores, it ran for about 8 hours, using no more than 8GB of RAM, and ultimately saving about 1.5GB of results to the hard-drive.
+- **Micro**: This option runs the experiments at very small scale, and should finish in a matter of minutes.  Good for quick testing, but the figures will have very few data points.
+
+Over the course of the experiments, results for each network tested are written to data files in the ``results`` sub-directory.  Progress updates as each network is being tested are written to text files in the ``logs`` sub-directory.  In a Linux shell, you can use
+
+```shell
+$ ls -lst logs/* | head
+```
+
+to see the log files most recently updated, and
+
+```shell
+$ tail logs/<logfile> && echo
+```
+
+to monitor the latest progress in one of the logs.  When the experiments are all complete, the figures will be generated and displayed one at a time (close the current figure and the next will automatically open).
+
 ## Basic Usage
 
 ### Neural Network Model
@@ -159,47 +203,3 @@ unique_fxpts, _ = rfx.post_process_fxpts(W, pts)
 ```
 
 This function call will do both refinement and duplicate removal.  It also includes ``-fxpts`` in its output, since the fixed points of our network model always come in +/- pairs.  This same post-processing is also used by ``run_solver`` under the hood.  In principle, fiber traversal should encounter every fixed point at most once, obviating the need for duplicate removal.  However, for added redundancy, *three* fixed point seeds are actually refined at every step where ``fiber[N,:]`` changes sign:  the point on the fiber before the step, the point after the step, and a linear interpolant of the two.
-
-## Documentation
-
-``rnn-fxpts`` contains many more sub-routines in support of the key functionality described above.  For full API documentation, you can use Python's built-in ``help`` function:
-
-```python
->>> import rnn_fxpts
->>> help(rnn_fxpts)
->>> help(rnn_fxpts.run_solver)
-```
-and so on.
-
-For more information on algorithmic details and proofs, please consult the following:
-
-Katz, G. and Reggia, J. "Towards Global Solution of the Fixed Point Equations in Attractor Neural Networks," *submitted*, 2016. [TBA](https://github.com/garrettkatz/rnn-fxpts#documentation)
-
-> *Supplemental Material*: Katz, G. and Reggia, J. "Identifying fixed points in attractor neural networks using directional fibers: Supplemental material on theoretical results and practical aspects of numerical traversal," University of Maryland, College Park, Tech. Rep. CS-TR-5051, December 2016. [TBA](https://github.com/garrettkatz/rnn-fxpts#documentation)
-
-## Reproducing the Experimental Results
-
-This repository includes all of the code needed to reproduce the figures and results reported in the foregoing references.  To run all of the experiments, invoke the ``reproduce_results.py`` script from the command line:
-
-```shell
-$ python reproduce_results.py
-```
-
-The script will prompt you to choose the number of processors to use, and one of three experimental scales:
-- **Full**: This option runs the experiments at full scale, using the same number of networks with the same sizes (up to ``N=128``) as reported in the papers.  This option is computationally expensive - on our workstation, using ten 3.5GHz Intel Xeon CPU cores, it ran for about one week, at times using upwards of 32GB of RAM, and ultimately saving almost 200GB of results to the hard-drive.  If you have more limited computational resources consider choosing the second option.
-- **Mini**: This option runs the experiments at reduced scale, using fewer networks limited to smaller sizes (up to ``N=64``).  This scale is more appropriate for personal computing resources - on one of our laptops, using four 2.4GHz Intel Core i7 CPU cores, it ran for about 8 hours, using no more than 8GB of RAM, and ultimately saving about 1.5GB of results to the hard-drive.
-- **Micro**: This option runs the experiments at very small scale, and should finish in a matter of minutes.  Good for quick testing, but the figures will have very few data points.
-
-Over the course of the experiments, results for each network tested are written to data files in the ``results`` sub-directory.  Progress updates as each network is being tested are written to text files in the ``logs`` sub-directory.  In a Linux shell, you can use
-
-```shell
-$ ls -lst logs/* | head
-```
-
-to see the log files most recently updated, and
-
-```shell
-$ tail logs/<logfile> && echo
-```
-
-to monitor the latest progress in one of the logs.  When the experiments are all complete, the figures will be generated and displayed one at a time (close the current figure and the next will automatically open).
