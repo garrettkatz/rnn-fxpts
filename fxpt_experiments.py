@@ -25,7 +25,7 @@ import plotter as ptr
 import rnn_fxpts as rfx
 import pickle as pkl
 
-def generate_test_data(network_sizes, num_samples, test_data_id=None):
+def generate_test_data(network_sizes, num_samples, test_data_id=None, refine_iters=2**5,refine_cap=10000):
     """
     Randomly sample networks for testing with some fixed points by construction
     network_sizes[i] should be the i^{th} network size to include in the test data
@@ -40,6 +40,11 @@ def generate_test_data(network_sizes, num_samples, test_data_id=None):
       "N_%d_V_%d"%(N,s): the corresponding known fixed points (N by N numpy.array), where
          test_data["N_%d_V_%d"%(N,s)][:,p] is the p^{th} known fixed point
     """
+    if test_data_id is not None and os.path.exists(test_data_id):
+        regen = raw_input('Test data exists, regenerate? (y/n): ')
+        # regen = 'n'
+        if regen == 'n':
+            return None
     test_data = {"network_sizes": np.array(network_sizes), "num_samples": np.array([num_samples])}
     for (N, S) in zip(network_sizes, num_samples):
         for s in range(S):
@@ -48,7 +53,8 @@ def generate_test_data(network_sizes, num_samples, test_data_id=None):
             # Construct W
             W = rfx.mrdivide(np.arctanh(V), V)
             # Refine V
-            V, _ = rfx.refine_fxpts(W, V)
+            # V, _ = rfx.refine_fxpts(W, V) # too slow on big experiments
+            V, _ = rfx.refine_fxpts_capped(W, V, max_iters=refine_iters, cap=refine_cap)
             # Store
             test_data["N_%d_W_%d"%(N,s)] = W
             test_data["N_%d_V_%d"%(N,s)] = V
@@ -136,7 +142,7 @@ def load_npz_file(filename):
     npz = {k:npz[k] for k in npz.files}
     return npz
 
-def test_traverse(W, V, c=None, result_key=None, logfilename=os.devnull, save_result=False, save_npz=False):
+def test_traverse(W, V, c=None, result_key=None, logfilename=os.devnull, save_result=False, save_npz=False, max_traverse_steps=2**20,max_fxpts=None):
     """
     Test the traverse algorithm on a single test network.
     W should be the weight matrix (N by N numpy.array)
@@ -147,6 +153,8 @@ def test_traverse(W, V, c=None, result_key=None, logfilename=os.devnull, save_re
     logfilename is a file name at which to write progress updates
     if save_result == True, results are saved in a file with name based on result_key
     if save_npz == True, traverse numpy outputs are saved in a file with name based on result_key
+    max_traverse_steps is number of steps allowed for traverse algorithm
+    max_fxpts is number of fxpts after which traverse can terminate
     returns results, npz, where
       results is a dictionary summarizing the test results
       npz is a dictionary with full numpy output from traverse
@@ -157,7 +165,7 @@ def test_traverse(W, V, c=None, result_key=None, logfilename=os.devnull, save_re
     # run traversal
     logfile.write('Running traversal: %s...\n'%result_key)
     start = time.clock()
-    status, fxV, VA, c, step_sizes, s_mins, residuals = rfx.traverse(W, c=c, max_traverse_steps = 2**20, logfile=logfile)
+    status, fxV, VA, c, step_sizes, s_mins, residuals = rfx.traverse(W, c=c, max_traverse_steps = max_traverse_steps, max_fxpts=max_fxpts,logfile=logfile)
     runtime = time.clock()-start
     num_steps = VA.shape[1]
 
@@ -190,9 +198,15 @@ def test_traverse(W, V, c=None, result_key=None, logfilename=os.devnull, save_re
     # check for ground truth inclusion
     logfile.write('Checking ground truths...\n')
     V_found = np.zeros(N, dtype=bool)
-    for j in range(V.shape[1]):
-        identical, _, _ = rfx.identical_fixed_points(W, fxV_converged, V[:,[j]])
-        V_found[j] = identical.any()
+    Winv = np.linalg.inv(W)
+    if fxV_converged.shape[1] > V.shape[1]:
+        for j in range(V.shape[1]):
+            identical, _, _ = rfx.identical_fixed_points(W, fxV_converged, V[:,[j]], Winv)
+            V_found[j] = identical.any()
+    else:
+        for j in range(fxV_converged.shape[1]):
+            identical, _, _ = rfx.identical_fixed_points(W, V, fxV_converged[:,[j]], Winv)
+            V_found |= identical
     results["num_V_found"] = V_found.sum(),
     npz["V_found"] = V_found
     if save_result: save_pkl_file('results/%s.pkl'%result_key, results)
@@ -212,12 +226,14 @@ def pool_test_traverse(args):
     results, _ = test_traverse(*args)
     return results
 
-def run_traverse_experiments(test_data_id, num_procs):
+def run_traverse_experiments(test_data_id, num_procs, max_traverse_steps=2**20,max_fxpts=None):
     """
     Run test_traverse on every network in the test data
     Uses multi-processing to test on multiple networks in parallel
     test_data_id should be as in generate_test_data (without file extension)
     num_procs is the number of processors to use in parallel
+    max_traverse_steps is number of steps allowed for traverse algorithm
+    max_fxpts is number of fxpts after which traverse can terminate
     returns pool_results, a list of results with one entry per network
     """
 
@@ -241,7 +257,7 @@ def run_traverse_experiments(test_data_id, num_procs):
                 logfilename = 'logs/temp.txt'
                 save_result=False
                 save_npz=False
-            pool_args.append((W,V,c,result_key,logfilename,save_result,save_npz))
+            pool_args.append((W,V,c,result_key,logfilename,save_result,save_npz,max_traverse_steps,max_fxpts))
     start_time = time.time()
     test_fun = pool_test_traverse
     if num_procs < 1: # don't multiprocess
@@ -797,12 +813,12 @@ def scatter_with_errors(Ns, uNs, y, marker, facecolor, show_scatter=False):
     plt.xlabel('N')
     return scat
 
-def baseline_comparison_experiments(test_data_id, num_procs):
+def baseline_comparison_experiments(test_data_id, num_procs, max_traverse_steps=2**20):
     """
     Run traverse, the baseline, and the comparison on every network in the test data
     test_data_id should be as in generate_test_data (without file extension)
     num_procs is the number of processors to use in parallel
     """
-    _ = run_traverse_experiments(test_data_id,num_procs)
+    _ = run_traverse_experiments(test_data_id,num_procs,max_traverse_steps)
     _ = run_baseline_experiments(test_data_id,num_procs)
     _ = run_TvB_experiments(test_data_id,num_procs)

@@ -1,6 +1,7 @@
 """
 Library for fixed point location in recurrent neural networks using directional fibers.
 """
+import os
 import sys
 import time
 import pickle as pkl
@@ -10,6 +11,14 @@ import scipy.optimize as spo
 import plotter as ptr
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+
+def hardwrite(f,data):
+    """
+    Force file write to disk
+    """
+    f.write(data)
+    f.flush()
+    os.fsync(f)
 
 def eps(x):
     """
@@ -60,6 +69,12 @@ def get_connected_components(V, neighbors=None):
         # Index neighbors to current point
         n = neighbors(V[:,:p+1], V[:,[p]])
         # Merge components containing neighbors
+        if len(components[:p+1][n]) == 0:
+            print('comp',components)
+            print('comp[:p+1]',components[:p+1])
+            print('n',n)
+            print('comp[:p+1][n]',components[:p+1][n])
+            print('|V|,p',V.shape,p)
         components[:p+1][n] = components[:p+1][n].min()
 
     return components
@@ -144,29 +159,32 @@ def fixed_within_eps(W, V):
     fixed = (np.fabs(np.tanh(W.dot(V))-V) < margin).all(axis=0)
     return fixed, margin
 
-def identical_fixed_points(W, V, v):
+def identical_fixed_points(W, V, v, Winv=None):
     """
     Looks for identical fixed points based on Taylor expansion and forward error.
     W should be the weight matrix (a numpy.array).
     V should be a numpy.array where each V[:,p] is a fixed point.
     v should be an (N by 1) numpy.array representing a single fixed point.
+    Winv should be the inverse of W, unless None, in which case it is computed.
     Returns identical, RR, R, where
       identical[p]==True iff V[:,p] is identical to v
       RD[p]: the relative distance from V[:,p] to v (as a multiple of R)
       R: the radius around v past which another fixed point is considered distinct
     """
+    if Winv is None: Winv = np.linalg.inv(W)
     # sig'' has a maximum of sqrt(16/27) obtained at input arctanh(sqrt(1/3))
     N = W.shape[0]
     E = estimate_forward_error(W,np.ones((N,1))).max()
     D2 = np.sqrt(16./27.)
     Df = (1-np.tanh(W.dot(v))**2)*W - np.eye(N)
-    s_min = np.linalg.norm(Df.dot(np.linalg.inv(W)), ord=-2)
+    s_min = np.linalg.norm(Df.dot(Winv), ord=-2)
     # R = (s_min - np.sqrt(s_min**2 - 4*D2*np.sqrt(N)*E))/D2
     det = s_min**2 - 8*D2*np.sqrt(N)*E
     if det < 0:
         R = 0
         RD = np.inf*np.ones(V.shape[1])
-        identical = np.zeros(V.shape[1],dtype=bool)
+        # identical = np.zeros(V.shape[1],dtype=bool)
+        identical = (V == v).all(axis=0) # keep truly identical points
     else:
         R = (s_min - np.sqrt(det))/D2
         RD = np.sqrt((W.dot(V-v)**2).sum(axis=0))/R
@@ -484,7 +502,7 @@ def traverse(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_traverse_
         # Check termination
         if np.fabs(va[N]) > term:
             if logfile is not None:
-                logfile.write('Asymp: iteration %d of %s, step_size=%f, %d fx found, term: %e > %e\n'%(step,max_traverse_steps,step_size,len(fxV),np.fabs(va[N]),term.max()))
+                hardwrite(logfile,'Asymp: iteration %d of %s, step_size=%f, %d fx found, term: %e > %e\n'%(step,max_traverse_steps,step_size,len(fxV),np.fabs(va[N]),term.max()))
             status = "Success"
             break
 
@@ -496,12 +514,12 @@ def traverse(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_traverse_
         cloop_va = np.sqrt(((va-VA[0])**2).sum())
         if step > 5 and cloop_va < 1.5*cloop:
             if logfile is not None:
-                logfile.write('Cloop: iteration %d of %s, %d fx found, cloop: %e\n'%(step,max_traverse_steps,2*len(fxV)+1, cloop_va))
+                hardwrite(logfile,'Cloop: iteration %d of %s, %d fx found, cloop: %e\n'%(step,max_traverse_steps,2*len(fxV)+1, cloop_va))
             status = "Closed loop detected"
             break
 
         if (step % 100) == 0 and logfile is not None:
-            logfile.write('iteration %d of %s,step_size=%f,s_min=%e,%d fx,term:%e>? %e,cloop:%e\n'%(step,max_traverse_steps,step_size,s_min,len(fxV),va[N],term.max(), np.sqrt(((va-VA[0])**2).sum())))
+            hardwrite(logfile,'iteration %d of %s,step_size=%f,s_min=%e,%d fx,term:%e>? %e,cloop:%e\n'%(step,max_traverse_steps,step_size,s_min,len(fxV),va[N],term.max(), np.sqrt(((va-VA[0])**2).sum())))
 
     # clean output
     if len(fxV) == 0:
@@ -670,7 +688,11 @@ def refine_fxpts_capped(W, V, max_iters=2**5, cap=10000):
     """
     num_splits = int(np.ceil(1.0*V.shape[1]/cap))
     Vs = np.array_split(V, num_splits, axis=1)
-    refines = [refine_fxpts(W,V_,max_iters=max_iters) for V_ in Vs]
+    # refines = [refine_fxpts(W,V_,max_iters=max_iters) for V_ in Vs]
+    refines = []
+    for i in range(len(Vs)):
+        print('%d of %d'%(i,len(Vs)))
+        refines.append(refine_fxpts(W,Vs[i],max_iters=max_iters))
     V = np.concatenate([r[0] for r in refines],axis=1)
     converged = np.concatenate([r[1] for r in refines])
     return V, converged
@@ -749,16 +771,17 @@ def baseline_solver(W, timeout=60, max_fxpts=None, max_traj_steps=10, logfile=No
         # check termination
         runtime = time.clock()-start
         if runtime > timeout:
-            if logfile is not None: logfile.write('term: %d reps %fs\n'%(num_reps,runtime))
+            if logfile is not None:
+                hardwrite(logfile,'term: %d reps %fs\n'%(num_reps,runtime))
             break
 
         if (num_reps % 10) == 0 and logfile is not None:
-            logfile.write('%d reps (%f of %fs)\n'%(num_reps, runtime, timeout))
+            hardwrite(logfile,'%d reps (%f of %fs)\n'%(num_reps, runtime, timeout))
 
     fxV = np.concatenate(fxV,axis=1)
     return fxV, num_reps
 
-def post_process_fxpts(W, fxV, logfile=None, refine_cap=10000):
+def post_process_fxpts(W, fxV, logfile=None, refine_cap=10000, Winv=None):
     """
     Post-process a set of candidate fixed points:
       1. Refines the approximate point locations via Newton-Raphson
@@ -770,17 +793,19 @@ def post_process_fxpts(W, fxV, logfile=None, refine_cap=10000):
     logfile is a file object open for writing that records progress
       if None, no progress is recorded
     refine_cap is the maximum number of candidates refined at a time
+    Winv should be the inverse of W, unless None, in which case it is computed
     returns fxV_unique, fxV, where
       fxV_unique[:,p] is the p^{th} refined, unique fixed point found
       fxV[:,q] is the q^{th} refined (potentially duplicate) fixed point found
     """
-    if logfile is not None: logfile.write('Refining fxpts...')
+    if logfile is not None: hardwrite(logfile,'Refining fxpts...')
+    if Winv is None: Winv = np.linalg.inv(W)
     fxV, converged = refine_fxpts_capped(W, fxV, cap=refine_cap)
     fxV = fxV[:,converged]
     N = W.shape[0]
     fxV = np.concatenate((-fxV, np.zeros((N,1)), fxV),axis=1)
-    if logfile is not None: logfile.write('Uniqueing fxpts...\n')
-    neighbors = lambda X, y: identical_fixed_points(W, X, y)[0]
+    if logfile is not None: hardwrite(logfile,'Uniqueing fxpts...\n')
+    neighbors = lambda X, y: identical_fixed_points(W, X, y, Winv)[0]
     fxV_unique = get_unique_points_recursively(fxV, neighbors=neighbors)
     return fxV_unique, fxV
 
