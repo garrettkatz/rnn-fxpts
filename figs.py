@@ -39,6 +39,7 @@ def pert_fig():
     """
     Show that slight perturbations to network weight can change fixed points into attractor waypoints
     """
+    mpl.rcParams['pdf.fonttype'] = 42
     mpl.rcParams['mathtext.default'] = 'regular'
     mpl.rcParams.update({'figure.autolayout': True})
     mpl.rcParams.update({'font.size': 20})
