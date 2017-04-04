@@ -1,0 +1,4 @@
+make fxpt_experiments more consolidated and consistent
+    filename prefixes/suffixes for different experiments
+    encapsulate duplicated code
+    

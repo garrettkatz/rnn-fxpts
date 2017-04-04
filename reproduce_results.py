@@ -84,39 +84,40 @@ for dirname in ['results/','logs/']:
 
 # Comparison with baseline
 test_data_id = '%s_base'%scale_option
-_ = fe.run_traverse_experiments(test_data_id,num_procs,max_traverse_steps,max_fxpts)
-_ = fe.run_baseline_experiments(test_data_id,num_procs)
-_ = fe.run_TvB_experiments(test_data_id,num_procs)
+# _ = fe.run_traverse_experiments(test_data_id,num_procs,max_traverse_steps,max_fxpts)
+# _ = fe.run_baseline_experiments(test_data_id,num_procs)
+# _ = fe.run_TvB_experiments(test_data_id,num_procs)
+_ = fe.run_TvB_stability_experiments(test_data_id,num_procs)
 
-if scale_option in ['micro','mini','full']:
-    # Comparision of c choices
-    test_data_id = '%s_choose'%scale_option
-    _ = fe.run_Wc_experiments(test_data_id, num_procs)
+# if scale_option in ['micro','mini','full']:
+#     # Comparision of c choices
+#     test_data_id = '%s_choose'%scale_option
+#     _ = fe.run_Wc_experiments(test_data_id, num_procs)
 
-    # Assessment of round-off errors
-    test_data_id = '%s_base'%scale_option
-    _ = ro.get_relative_errors(test_data_id)
-    _ = ro.run_traverse_rd(test_data_id, ro_Ns, num_procs)
-    _ = ro.run_baseline_rd(test_data_id, ro_Ns, num_procs)
+#     # Assessment of round-off errors
+#     test_data_id = '%s_base'%scale_option
+#     _ = ro.get_relative_errors(test_data_id)
+#     _ = ro.run_traverse_rd(test_data_id, ro_Ns, num_procs)
+#     _ = ro.run_baseline_rd(test_data_id, ro_Ns, num_procs)
 
 total_time = time.time()-start_time
 print('Finished.  Took a total of %f hours.'%(total_time/3600.))
 
-if scale_option in ['micro','mini','full']:
+# if scale_option in ['micro','mini','full']:
 
-    # Show all the figures (except regular regions)
-    print('close each figure to open the next one...')
-    figs.show_all(comp_test_data_ids=[test_data_id]*len(ro_Ns), Ns=ro_Ns, samp_range=ro_samp_range, Wc_test_data_id='%s_choose'%scale_option)
+#     # Show all the figures (except regular regions)
+#     print('close each figure to open the next one...')
+#     figs.show_all(comp_test_data_ids=[test_data_id]*len(ro_Ns), Ns=ro_Ns, samp_range=ro_samp_range, Wc_test_data_id='%s_choose'%scale_option)
     
-    # make regular region figure)
-    yn=raw_input('Render regular regions figure (takes a few minutes)? Enter "y" or "n": ')
-    if yn == 'y':
-        figs.bad_c_fig()
+#     # make regular region figure)
+#     yn=raw_input('Render regular regions figure (takes a few minutes)? Enter "y" or "n": ')
+#     if yn == 'y':
+#         figs.bad_c_fig()
 
-else:
-    # # Only show T v B results
-    # fe.show_tvb_results(test_data_ids=[test_data_id])
-    # fe.show_tvb_dist_results(test_data_ids=[test_data_id])
-    # fe.show_tvb_runtimes(test_data_ids=[test_data_id])
-    # fe.show_tvb_rawcounts(test_data_ids=[test_data_id])
-    pass
+# else:
+#     # # Only show T v B results
+#     # fe.show_tvb_results(test_data_ids=[test_data_id])
+#     # fe.show_tvb_dist_results(test_data_ids=[test_data_id])
+#     # fe.show_tvb_runtimes(test_data_ids=[test_data_id])
+#     # fe.show_tvb_rawcounts(test_data_ids=[test_data_id])
+#     pass

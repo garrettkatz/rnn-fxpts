@@ -163,7 +163,7 @@ def test_traverse(W, V, c=None, result_key=None, logfilename=os.devnull, save_re
     logfile = open(logfilename,'w')
 
     # run traversal
-    logfile.write('Running traversal: %s...\n'%result_key)
+    rfx.hardwrite(logfile,'Running traversal: %s...\n'%result_key)
     start = time.clock()
     status, fxV, VA, c, step_sizes, s_mins, residuals = rfx.traverse(W, c=c, max_traverse_steps = max_traverse_steps, max_fxpts=max_fxpts,logfile=logfile)
     runtime = time.clock()-start
@@ -196,7 +196,7 @@ def test_traverse(W, V, c=None, result_key=None, logfilename=os.devnull, save_re
     if save_npz: save_npz_file('results/%s.npz'%result_key, **npz)
 
     # check for ground truth inclusion
-    logfile.write('Checking ground truths...\n')
+    rfx.hardwrite(logfile,'Checking ground truths...\n')
     V_found = np.zeros(N, dtype=bool)
     Winv = np.linalg.inv(W)
     if fxV_converged.shape[1] > V.shape[1]:
@@ -213,7 +213,7 @@ def test_traverse(W, V, c=None, result_key=None, logfilename=os.devnull, save_re
     if save_npz: save_npz_file('results/%s.npz'%result_key, **npz)
 
     finish_str = "pid %d: %s, %d fxV (%d unique), %d of %d gt, %d iters (length ~ %f, step_size ~ %f).  restarting..."%(os.getpid(), result_key, fxV.shape[1], fxV_unique.shape[1], V_found.sum(), N, num_steps, step_sizes.sum(), step_sizes.mean())
-    logfile.write('%s\n'%finish_str)
+    rfx.hardwrite(logfile,'%s\n'%finish_str)
     print(finish_str)
 
     logfile.close()
@@ -289,7 +289,7 @@ def test_Wc(W, V, result_key=None, logfilename=os.devnull, save_result=False):
     """
     N = W.shape[0]
     logfile = open(logfilename,'w')
-    logfile.write('Running Wc: %s...\n'%result_key)
+    rfx.hardwrite(logfile,'Running Wc: %s...\n'%result_key)
 
     signs = ptr.lattice(-np.ones((N,1)),np.ones((N,1)),2)
     C = rfx.solve(W, signs + 0.1*(np.random.rand(*signs.shape)-0.5))
@@ -298,7 +298,7 @@ def test_Wc(W, V, result_key=None, logfilename=os.devnull, save_result=False):
     for s in range(signs.shape[1]):
 
         # run traversal
-        logfile.write('Running traversal %d...\n'%s)
+        rfx.hardwrite(logfile,'Running traversal %d...\n'%s)
         start = time.clock()
         status, fxV, VA, c, step_sizes, s_mins, residuals = rfx.traverse(W, c=C[:,[s]], max_traverse_steps = 2**20, logfile=logfile)
         runtime = time.clock()-start
@@ -320,7 +320,7 @@ def test_Wc(W, V, result_key=None, logfilename=os.devnull, save_result=False):
         }
 
         # check for ground truth inclusion
-        logfile.write('Checking ground truths...\n')
+        rfx.hardwrite(logfile,'Checking ground truths...\n')
         V_found = np.zeros(N, dtype=bool)
         for j in range(V.shape[1]):
             identical, _, _ = rfx.identical_fixed_points(W, fxV_unique, V[:,[j]])
@@ -332,17 +332,17 @@ def test_Wc(W, V, result_key=None, logfilename=os.devnull, save_result=False):
     # union of known fxV
     V = np.concatenate((-V, np.zeros((N,1)), V), axis=1)
     fxV_union = np.concatenate(all_fxV + [V], axis=1)
-    logfile.write('post-processing union...\n')
+    rfx.hardwrite(logfile,'post-processing union...\n')
     fxV_union, _ = rfx.post_process_fxpts(W, fxV_union, logfile=logfile)
     for s in range(signs.shape[1]):
         results[s]["num_fxV_union"] = fxV_union.shape[1]
 
     # return results
     if save_result: save_pkl_file('results/%s.pkl'%result_key, results)
-    logfile.write('%s\n'%str([r["num_fxV_unique"] for r in results]))
+    rfx.hardwrite(logfile,'%s\n'%str([r["num_fxV_unique"] for r in results]))
     best = max([r["num_fxV_unique"] for r in results])
     finish_str = "pid %d: %s, best=%d fxV of %d union.  restarting..."%(os.getpid(), result_key, best, fxV_union.shape[1])
-    logfile.write('%s\n'%finish_str)
+    rfx.hardwrite(logfile,'%s\n'%finish_str)
     print(finish_str)
 
     return results
@@ -426,7 +426,7 @@ def test_baseline(W, V, timeout=60, result_key=None, logfilename=os.devnull, sav
     if save_result: save_pkl_file('results/%s.pkl'%result_key, results)
     if save_npz: save_npz_file('results/%s.npz'%result_key, **npz)
 
-    logfile.write("Post-processing...\n")
+    rfx.hardwrite(logfile,"Post-processing...\n")
     start = time.clock()
     fxV_unique, fxV_converged = rfx.post_process_fxpts(W, fxV, logfile=logfile)
     post_runtime = time.clock()-start
@@ -438,7 +438,7 @@ def test_baseline(W, V, timeout=60, result_key=None, logfilename=os.devnull, sav
     if save_npz: save_npz_file('results/%s.npz'%result_key, **npz)
 
     # check for ground truth inclusion
-    logfile.write('checking ground truths...\n')
+    rfx.hardwrite(logfile,'checking ground truths...\n')
     V_found = np.zeros(N, dtype=bool)
     for j in range(V.shape[1]):
         identical, _, _ = rfx.identical_fixed_points(W, fxV_converged, V[:,[j]])
@@ -449,7 +449,7 @@ def test_baseline(W, V, timeout=60, result_key=None, logfilename=os.devnull, sav
     if save_npz: save_npz_file('results/%s.npz'%result_key, **npz)
 
     finish_str = "pid %d: %s, %d fxV (%d unique), %d of %d gt, %d reps.  restarting..."%(os.getpid(), result_key, fxV_converged.shape[1], fxV_unique.shape[1], V_found.sum(), N, num_reps)
-    logfile.write("%s\n"%finish_str)
+    rfx.hardwrite(logfile,"%s\n"%finish_str)
     print(finish_str)
 
     logfile.close()
@@ -522,7 +522,7 @@ def test_TvB(test_data_id, N, s, logfilename=os.devnull, save_result=False, save
     """
     logfile = open(logfilename,'w')
 
-    logfile.write('Loading results...\n')
+    rfx.hardwrite(logfile,'Loading results...\n')
     _,_,test_data = load_test_data('%s.npz'%test_data_id)
     W = test_data['N_%d_W_%d'%(N,s)]
     baseline_npz = np.load('results/baseline_%s_N_%d_s_%d.npz'%(test_data_id, N, s))
@@ -544,13 +544,13 @@ def test_TvB(test_data_id, N, s, logfilename=os.devnull, save_result=False, save
     if save_npz: save_npz_file('results/%s.npz'%result_key, **npz)
 
     # Get union
-    logfile.write('unioning %d + %d...\n'%(T, B))
+    rfx.hardwrite(logfile,'unioning %d + %d...\n'%(T, B))
     fxV_union = np.concatenate((fxV_traverse, fxV_baseline), axis=1)
     neighbors = lambda X, y: rfx.identical_fixed_points(W, X, y)[0]
     fxV_union = rfx.get_unique_points_recursively(fxV_union, neighbors=neighbors)
     TB = fxV_union.shape[1]
     finish_str = 'N:%d,T:%d, B:%d, T|B:%d, T&B:%d, T-B:%d(%f), B-T:%d(%f)'%(N,T,B,TB,T+B-TB,TB-B,1.*(TB-B)/TB,TB-T,1.*(TB-T)/TB)
-    logfile.write('%s\n'%finish_str)
+    rfx.hardwrite(logfile,'%s\n'%finish_str)
     print(finish_str)
 
     results['T|B']=TB
@@ -624,6 +624,114 @@ def run_TvB_experiments(test_data_id, num_procs):
 
     return pool_results
 
+def test_TvB_stability(test_data_id, N, s, logfilename=os.devnull, save_result=False, save_npz=False):
+    """
+    Compare the stability at traverse and baseline results on a single test network.
+    test_data_id should be as in generate_test_data (without file extension)
+    Inspects the s^{th} network of size N
+    logfilename is a file name at which to write progress updates
+    if save_result == True, results are saved in a file with name based on test_data_id
+    if save_npz == True, numpy outputs are saved in a file with name based on test_data_id
+    returns results, npz, where
+      results is a dictionary summarizing the test results
+      npz is a dictionary with full numpy output
+    """
+    logfile = open(logfilename,'w')
+
+    rfx.hardwrite(logfile,'Loading results...\n')
+    _,_,test_data = load_test_data('%s.npz'%test_data_id)
+    W = test_data['N_%d_W_%d'%(N,s)]
+    baseline_npz = np.load('results/baseline_%s_N_%d_s_%d.npz'%(test_data_id, N, s))
+    traverse_npz = np.load('results/traverse_%s_N_%d_s_%d.npz'%(test_data_id, N, s))
+    fxV_baseline = baseline_npz["fxV_unique"]
+    fxV_traverse = traverse_npz["fxV_unique"]
+    fxVs = {'baseline':fxV_baseline,'traverse':fxV_traverse}
+
+    result_key = 'TvB_stable_%s_N_%d_s_%d'%(test_data_id, N, s)
+    results = {
+        'result_key': result_key,
+        'N':N,
+        'T':fxV_traverse.shape[1],
+        'B':fxV_baseline.shape[1],
+    }
+    npz = {}
+    if save_result: save_pkl_file('results/%s.pkl'%result_key, results)
+    if save_npz: save_npz_file('results/%s.npz'%result_key, **npz)
+
+    # Stability analysis
+    rfx.hardwrite(logfile,'linearizing and checking stability...\n')
+    norms, num_big_eigs, num_stable, avg_num_big, min_num_big = {}, {}, {}, {}, {}
+    I = np.eye(N)
+    for method_key in ['baseline','traverse']:
+        fxV = fxVs[method_key]
+        norms[method_key] = np.sqrt((fxV**2).sum(axis=0))
+        num_big_eigs[method_key] = np.empty(fxV.shape[1])
+        for j in range(fxV.shape[1]):
+            rfx.hardwrite(logfile,'method %s: j = %d of %d (%d stable so far)\n'%(method_key,j,fxV.shape[1],(num_big_eigs[method_key][:j] == 0).sum()))
+            # linearize
+            Df = (1-np.tanh(W.dot(fxV[:,[j]]))**2)*W - I
+            eigs, _ = np.linalg.eig(Df)
+            num_big_eigs[method_key][j] = (np.absolute(eigs) >= 1).sum()
+        avg_num_big[method_key] = num_big_eigs[method_key].astype(float).mean()
+        min_num_big[method_key] = num_big_eigs[method_key].astype(float).min()
+        num_stable[method_key] = (num_big_eigs[method_key] == 0).sum()
+        npz['norms_%s'%method_key] = norms[method_key]
+        npz['num_big_eigs_%s'%method_key] = num_big_eigs[method_key]
+        results['avg_num_big_%s'%method_key] = avg_num_big[method_key]
+        results['min_num_big_%s'%method_key] = min_num_big[method_key]
+        results['num_stable_%s'%method_key] = num_stable[method_key]
+    finish_str = 'N:%d,T:%d of %d stable (~%f big),B:%d of %d stable (~%f big)'%(N,num_stable['traverse'],results['T'],avg_num_big['traverse'],num_stable['baseline'],results['B'],avg_num_big['baseline'])
+    rfx.hardwrite(logfile,'%s\n'%finish_str)
+    print(finish_str)
+
+    if save_result: save_pkl_file('results/%s.pkl'%result_key, results)
+    if save_npz: save_npz_file('results/%s.npz'%result_key, **npz)
+
+    logfile.close()
+    return results, npz
+
+def pool_test_TvB_stability(args):
+    """
+    Wrapper function passed to multiprocessing.Pool
+    """
+    results, _ = test_TvB_stability(*args)
+    return results
+
+def run_TvB_stability_experiments(test_data_id, num_procs):
+    """
+    Run test_TvB_stability on every network in the test data
+    Uses multi-processing to test on multiple networks in parallel
+    test_data_id should be as in generate_test_data (without file extension)
+    num_procs is the number of processors to use in parallel
+    returns pool_results, a list of results with one entry per network
+    """
+
+    cpu_count = mp.cpu_count()
+    print('%d cpus, using %d'%(cpu_count, num_procs))
+
+    pool_args = []
+    network_sizes, num_samples, test_data = load_test_data('%s.npz'%test_data_id)
+    for (N,S) in zip(network_sizes, num_samples):
+        for s in range(S):
+            logfilename = 'logs/tvb_stab_%s_N_%d_s_%d.log'%(test_data_id, N, s)
+            save_result=True
+            save_npz=True
+            pool_args.append((test_data_id, N, s, logfilename, save_result, save_npz))
+    start_time = time.time()
+    test_fun = pool_test_TvB_stability
+    if num_procs < 1: # don't multiprocess
+        pool_results = [test_fun(args) for args in pool_args]
+    else:
+        pool = mp.Pool(processes=num_procs)
+        pool_results = pool.map(test_fun, pool_args)
+        pool.close()
+        pool.join()
+    print('total time: %f. saving results...'%(time.time()-start_time))
+
+    results_file = open('results/tvb_stab_%s.pkl'%test_data_id, 'w')
+    pkl.dump(pool_results, results_file)
+    results_file.close()
+
 def show_tvb_results(test_data_ids=['dl50','dm10','dh5']):
     """
     Plot the results of traverse-baseline performance comparison on one or more testing data sets
@@ -632,7 +740,18 @@ def show_tvb_results(test_data_ids=['dl50','dm10','dh5']):
     results = []
     for test_data_id in test_data_ids:
         results += load_pkl_file('results/tvb_%s.pkl'%test_data_id)
-    results = [r for r in results if r['N'] in [2,4,7,10,13,16,24,32,48,64,128]]
+        # # temp because accidentally overwrote
+        # curr_results = []
+        # network_sizes, num_samples, test_data = load_test_data('%s.npz'%test_data_id)
+        # for (N,S) in zip(network_sizes, num_samples):
+        #     for s in range(S):
+        #         print(N,s)
+        #         result_key = 'TvB_%s_N_%d_s_%d'%(test_data_id, N, s)
+        #         result = load_pkl_file('results/%s.pkl'%result_key)
+        #         curr_results.append(result)
+        # results += curr_results
+        # save_pkl_file('results/tvb_%s.pkl'%test_data_id, curr_results)
+    results = [r for r in results if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1000]]
     mpl.rcParams['mathtext.default'] = 'regular'
     mpl.rcParams.update({'figure.autolayout': True})
     mpl.rcParams.update({'font.size': 12})
@@ -646,9 +765,11 @@ def show_tvb_results(test_data_ids=['dl50','dm10','dh5']):
     # handles.append(scatter_with_errors(Ns, uNs, np.log2(Ns), marker='d'))
     handles.append(plt.plot(uNs, np.log2(uNs), 'dk--', ms=9)[0])
     # plt.legend(handles, [ym[0] for ym in dats]+['Known'], loc='upper left')
-    plt.legend(handles, ['$T\cup\,B$', '$T\cap\,B$', '$T-B$', '$B-T$', 'Known'], loc='lower right')
-    plt.xlim([uNs[0]-1,uNs[-1]+1])
+    plt.legend(handles, ['$T\cup\,B$', '$T\cap\,B$', '$T-B$', '$B-T$', 'Known'], loc='upper right')
+    # plt.xlim([uNs[0]-1,uNs[-1]+1])
     plt.ylim([-1,15])
+    plt.xlim([2**.5,2*uNs[-1]])
+    plt.gca().set_xscale('log',basex=2)
     plt.ylabel('# of fixed points')
     #plt.title('Traverse vs Baseline')
     # plt.draw()
@@ -667,7 +788,7 @@ def show_tvb_dist_results(test_data_ids=['dl50','dm10','dh5']):
     for test_data_id in test_data_ids:
         # results += load_pkl_file('results/tvb_dist_%s.pkl'%test_data_id)
         results += load_pkl_file('results/tvb_%s.pkl'%test_data_id)
-    results = [r for r in results if r['N'] in [2,4,7,10,13,16,24,32,48,64,128]]
+    results = [r for r in results if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1000]]
     mpl.rcParams['mathtext.default'] = 'regular'
     # mpl.rcParams.update({'figure.autolayout': True})
     mpl.rcParams.update({'font.size': 12})
@@ -684,7 +805,9 @@ def show_tvb_dist_results(test_data_ids=['dl50','dm10','dh5']):
     handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist_v'] for r in results]),'^','k'))
     handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist_v'] for r in results]),'^','none'))
     plt.legend(handles, ['$||T - T_{mean}||$','$||B - B_{mean}||$','$||T - [T]||$','$||B - [B]||$'], loc='upper left')
-    plt.xlim([uNs[0]-1,uNs[-1]+1])
+    # plt.xlim([uNs[0]-1,uNs[-1]+1])
+    plt.xlim([2**.5,2*uNs[-1]])
+    plt.gca().set_xscale('log',basex=2)
     # plt.ylim([-1,15])
     plt.ylabel('Average distances')
     #plt.title('Traverse vs Baseline')
@@ -693,6 +816,82 @@ def show_tvb_dist_results(test_data_ids=['dl50','dm10','dh5']):
     # plt.gca().set_yticklabels(['2^%s'%(yl.get_text()) for yl in ytick_labels])
     # plt.yticks(range(-1,15,2),['0']+['$2^{%d}$'%yl for yl in range(1,15,2)])
     # plt.tight_layout()
+    plt.show()
+
+def show_tvb_stab_result(test_data_id, N, s):
+    mpl.rcParams['mathtext.default'] = 'regular'
+    # mpl.rcParams.update({'figure.autolayout': True})
+    mpl.rcParams.update({'font.size': 16})
+    results = load_pkl_file('results/TvB_stable_%s_N_%d_s_%d.pkl'%(test_data_id, N, s))
+    npz = load_npz_file('results/TvB_stable_%s_N_%d_s_%d.npz'%(test_data_id, N, s))
+    plt.subplot(1,2,1).clear()
+    ms = 2*(mpl.rcParams['lines.markersize'] ** 2)
+    plt.scatter(npz['norms_baseline'],npz['num_big_eigs_baseline'],c='',marker='o',s=ms)
+    plt.scatter(npz['norms_traverse'],npz['num_big_eigs_traverse']+.5,c='k',marker='+',s=ms)
+    plt.legend(['B','T'],loc='upper left')
+    norm_max = max(npz['norms_baseline'].max(),npz['norms_traverse'].max())
+    plt.xlim([-.1*norm_max,1.1*norm_max])
+    # plt.ylim([-1,15])
+    plt.xlabel('Norm')
+    plt.ylabel('# of unstable directions')
+    plt.subplot(1,2,2).clear()
+    plt.hist([npz['num_big_eigs_baseline'],npz['num_big_eigs_traverse']],color=['k','w'],bins=range(N+1))
+    plt.legend(['B','T'],loc='upper right')
+    plt.xlabel('# of unstable directions')
+    plt.ylabel('# of fixed points')
+    plt.tight_layout()
+    # plt.xlim([-30,50])
+    # plt.xticks(range(-30,51,10),['']+['$2^{%d}$'%xl for xl in range(-20,51,10)])
+            
+def show_tvb_stab_results(test_data_ids):
+    """
+    Plot the results of traverse-baseline stability analysis on one or more testing data sets
+    test_data_ids should be the list of ids, each as in generate_test_data (without file extension)
+    """
+    results = []
+    for test_data_id in test_data_ids:
+        # results += load_pkl_file('results/tvb_dist_%s.pkl'%test_data_id)
+        # results += load_pkl_file('results/tvb_%s.pkl'%test_data_id)
+        next_results = load_pkl_file('results/tvb_stab_%s.pkl'%test_data_id)
+        # # temp because left out of code before first run:
+        # for r in range(len(next_results)):
+        #     npz = load_npz_file('results/%s.npz'%next_results[r]['result_key'])
+        #     next_results[r]['avg_big_eigs_traverse'] = npz['num_big_eigs_traverse'].mean()
+        #     next_results[r]['avg_big_eigs_baseline'] = npz['num_big_eigs_baseline'].mean()
+        #     next_results[r]['min_big_eigs_traverse'] = npz['num_big_eigs_traverse'].min()
+        #     next_results[r]['min_big_eigs_baseline'] = npz['num_big_eigs_baseline'].min()
+        # # save_pkl_file('results/tvb_stab_%s.pkl'%test_data_id,next_results)
+        results += next_results
+    results = [r for r in results if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1000]]
+    mpl.rcParams['mathtext.default'] = 'regular'
+    # mpl.rcParams.update({'figure.autolayout': True})
+    mpl.rcParams.update({'font.size': 12})
+    Ns = np.array([r['N'] for r in results])
+    uNs = np.unique(Ns)
+    handles = []
+    # handles.append(scatter_with_errors(Ns, uNs, np.array([r['mean_dist'] for r in results])))
+    handles.append(scatter_with_errors(Ns, uNs, np.array([r['avg_num_big_traverse'] for r in results]), 'o','none'))
+    handles.append(scatter_with_errors(Ns, uNs, np.array([r['avg_num_big_baseline'] for r in results]), 'd','none'))
+    handles.append(scatter_with_errors(Ns, uNs, np.array([r['min_num_big_traverse'] for r in results]), '^','none'))
+    handles.append(scatter_with_errors(Ns, uNs, np.array([r['min_num_big_baseline'] for r in results]), 'x','k'))
+    # handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist_p'] for r in results]),'^'))
+    # handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist_p'] for r in results]),'v'))
+    # handles.append(scatter_with_errors(Ns, uNs, np.array([r['mean_dist_p'] for r in results]), 'd')) # accidental tuple
+    # plt.legend(handles, ['$||T - T_{mean}||$','$||B - B_{mean}||$','$||T^{+} - T^{+}_{mean}||$','$||B^{+} - B^{+}_{mean}||$','$||T^{+}_{mean} - B^{+}_{mean}||$'], loc='upper left')
+    # handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist_v'] for r in results]),'^','k'))
+    # handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist_v'] for r in results]),'^','none'))
+    # plt.legend(handles, ['Traverse','Baseline'], loc='upper left')
+    plt.legend(handles, ['T (avg)','B (avg)','T (min)','B (min)'], loc='upper left')
+    plt.xlim([uNs[0]-1,uNs[-1]+1])
+    # plt.ylim([-1,15])
+    plt.ylabel('# of unstable directions')
+    # plt.xlabel('N')
+    #plt.title('Traverse vs Baseline')
+    # plt.draw()
+    # ytick_labels = plt.gca().get_yticklabels()
+    # plt.gca().set_yticklabels(['2^%s'%(yl.get_text()) for yl in ytick_labels])
+    # plt.yticks(range(-1,15,2),['0']+['$2^{%d}$'%yl for yl in range(1,15,2)])
+    plt.tight_layout()
     plt.show()
 
 def show_tvb_runtimes(test_data_ids):
@@ -708,8 +907,8 @@ def show_tvb_runtimes(test_data_ids):
     for test_data_id in test_data_ids:
         t_res += load_pkl_file('results/traverse_%s.pkl'%test_data_id)
         b_res += load_pkl_file('results/baseline_%s.pkl'%test_data_id)
-    t_res = [r for r in t_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128]]
-    b_res = [r for r in b_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128]]
+    t_res = [r for r in t_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1000]]
+    b_res = [r for r in b_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1000]]
 
     Ns = np.array([r['N'] for r in t_res])
     uNs = np.unique(Ns)
@@ -718,9 +917,50 @@ def show_tvb_runtimes(test_data_ids):
     handles.append(scatter_with_errors(Ns, uNs, (np.array([r['runtime']+r['post_runtime'] for r in t_res]))/60, 'o','none'))
     handles.append(scatter_with_errors(Ns, uNs, (np.array([r['runtime'] for r in t_res]))/60, 'x','none'))
     plt.legend(handles, ['With B post-processing','With T post-processing','Runtime'], loc='upper left')
-    plt.xlim([uNs[0]-1,uNs[-1]+1])
-    plt.ylim([-10,200])
+    # plt.xlim([uNs[0]-1,uNs[-1]+1])
+    plt.xlim([2**.5,2*uNs[-1]])
+    plt.gca().set_xscale('log',basex=2)
+    # plt.ylim([-10,200])
     plt.ylabel('Running time (minutes)')
+    # plt.gca().set_yscale('log',basey=2)
+    #plt.title('Traverse vs Baseline')
+    # plt.draw()
+    # ytick_labels = plt.gca().get_yticklabels()
+    # plt.gca().set_yticklabels(['2^%s'%(yl.get_text()) for yl in ytick_labels])
+    # plt.yticks(range(-1,15,2),['0']+['$2^{%d}$'%yl for yl in range(1,15,2)])
+    # plt.tight_layout()
+    plt.show()
+
+def show_tvb_work(test_data_ids):
+    """
+    Plot the results of traverse-baseline work complexity comparison on one or more testing data sets
+    test_data_ids should be the list of ids, each as in generate_test_data (without file extension)
+    """
+    mpl.rcParams['mathtext.default'] = 'regular'
+    # mpl.rcParams.update({'figure.autolayout': True})
+    mpl.rcParams.update({'font.size': 12})
+
+    t_res, b_res = [], []
+    for test_data_id in test_data_ids:
+        t_res += load_pkl_file('results/traverse_%s.pkl'%test_data_id)
+        b_res += load_pkl_file('results/baseline_%s.pkl'%test_data_id)
+    t_res = [r for r in t_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1000]]
+    b_res = [r for r in b_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1000]]
+
+    Ns = np.array([r['N'] for r in t_res])
+    uNs = np.unique(Ns)
+    handles = []
+    handles.append(scatter_with_errors(Ns, uNs, np.log2((np.array([(r['runtime']+r['post_runtime'])/r['num_fxV_unique'] for r in b_res]))/60), 'o','none'))
+    handles.append(scatter_with_errors(Ns, uNs, np.log2((np.array([(r['runtime'])/r['num_fxV_unique'] for r in b_res]))/60), 'x','none'))
+    handles.append(scatter_with_errors(Ns, uNs, np.log2((np.array([r['runtime']/r['num_fxV_unique'] for r in t_res]))/60), '^','none'))
+    plt.legend(handles, ['B with post-processing','B no post-processing','T with post-processing'], loc='upper left')
+    # plt.xlim([uNs[0]-1,uNs[-1]+1])
+    plt.xlim([2**.5,1.5*uNs[-1]])
+    plt.gca().set_xscale('log',basex=2)
+    plt.ylabel('Minutes per fixed point found')
+    plt.yticks(range(-13,13,2),['$2^{%d}$'%yl for yl in range(-13,13,2)])
+    plt.ylim([-14,6])
+    # plt.gca().set_yscale('log',basey=2)
     #plt.title('Traverse vs Baseline')
     # plt.draw()
     # ytick_labels = plt.gca().get_yticklabels()
@@ -743,8 +983,8 @@ def show_tvb_rawcounts(test_data_ids):
     for test_data_id in test_data_ids:
         t_res += load_pkl_file('results/traverse_%s.pkl'%test_data_id)
         b_res += load_pkl_file('results/baseline_%s.pkl'%test_data_id)
-    t_res = [r for r in t_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128]]
-    b_res = [r for r in b_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128]]
+    t_res = [r for r in t_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1000]]
+    b_res = [r for r in b_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1000]]
 
     Ns = np.array([r['N'] for r in t_res])
     uNs = np.unique(Ns)
