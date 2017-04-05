@@ -639,13 +639,14 @@ def test_TvB_stability(test_data_id, N, s, logfilename=os.devnull, save_result=F
     logfile = open(logfilename,'w')
 
     rfx.hardwrite(logfile,'Loading results...\n')
-    _,_,test_data = load_test_data('%s.npz'%test_data_id)
-    W = test_data['N_%d_W_%d'%(N,s)]
+    # _,_,test_data = load_test_data('%s.npz'%test_data_id)
+    # W = test_data['N_%d_W_%d'%(N,s)]
     baseline_npz = np.load('results/baseline_%s_N_%d_s_%d.npz'%(test_data_id, N, s))
     traverse_npz = np.load('results/traverse_%s_N_%d_s_%d.npz'%(test_data_id, N, s))
     fxV_baseline = baseline_npz["fxV_unique"]
     fxV_traverse = traverse_npz["fxV_unique"]
     fxVs = {'baseline':fxV_baseline,'traverse':fxV_traverse}
+    W = traverse_npz['W']
 
     result_key = 'TvB_stable_%s_N_%d_s_%d'%(test_data_id, N, s)
     results = {
@@ -660,23 +661,26 @@ def test_TvB_stability(test_data_id, N, s, logfilename=os.devnull, save_result=F
 
     # Stability analysis
     rfx.hardwrite(logfile,'linearizing and checking stability...\n')
-    norms, num_big_eigs, num_stable, avg_num_big, min_num_big = {}, {}, {}, {}, {}
+    norms, num_big_eigs, max_eigs, num_stable, avg_num_big, min_num_big = {}, {}, {}, {}, {}, {}
     I = np.eye(N)
     for method_key in ['baseline','traverse']:
         fxV = fxVs[method_key]
         norms[method_key] = np.sqrt((fxV**2).sum(axis=0))
         num_big_eigs[method_key] = np.empty(fxV.shape[1])
+        max_eigs[method_key] = np.empty(fxV.shape[1])
         for j in range(fxV.shape[1]):
             rfx.hardwrite(logfile,'method %s: j = %d of %d (%d stable so far)\n'%(method_key,j,fxV.shape[1],(num_big_eigs[method_key][:j] == 0).sum()))
             # linearize
             Df = (1-np.tanh(W.dot(fxV[:,[j]]))**2)*W - I
             eigs, _ = np.linalg.eig(Df)
+            max_eigs[method_key][j] = np.absolute(eigs).max()
             num_big_eigs[method_key][j] = (np.absolute(eigs) >= 1).sum()
         avg_num_big[method_key] = num_big_eigs[method_key].astype(float).mean()
         min_num_big[method_key] = num_big_eigs[method_key].astype(float).min()
         num_stable[method_key] = (num_big_eigs[method_key] == 0).sum()
         npz['norms_%s'%method_key] = norms[method_key]
         npz['num_big_eigs_%s'%method_key] = num_big_eigs[method_key]
+        npz['max_eigs_%s'%method_key] = max_eigs[method_key]
         results['avg_num_big_%s'%method_key] = avg_num_big[method_key]
         results['min_num_big_%s'%method_key] = min_num_big[method_key]
         results['num_stable_%s'%method_key] = num_stable[method_key]
@@ -826,20 +830,40 @@ def show_tvb_stab_result(test_data_id, N, s):
     npz = load_npz_file('results/TvB_stable_%s_N_%d_s_%d.npz'%(test_data_id, N, s))
     plt.subplot(1,2,1).clear()
     ms = 2*(mpl.rcParams['lines.markersize'] ** 2)
-    plt.scatter(npz['norms_baseline'],npz['num_big_eigs_baseline'],c='',marker='o',s=ms)
-    plt.scatter(npz['norms_traverse'],npz['num_big_eigs_traverse']+.5,c='k',marker='+',s=ms)
+    # br = 0.25*np.random.rand(*npz['norms_baseline'].shape)
+    # tr = 0.25*np.random.rand(*npz['norms_traverse'].shape)
+    # plt.scatter(npz['norms_baseline'],npz['num_big_eigs_baseline']+br,c='',marker='o',s=ms)
+    # plt.scatter(npz['norms_traverse'],npz['num_big_eigs_traverse']+.5+tr,c='k',marker='+',s=ms)
+    t_idx = np.random.rand(*npz['norms_traverse'].shape) < .05
+    b_idx = np.random.rand(*npz['norms_baseline'].shape) < .05
+    plt.scatter(npz['norms_baseline'][b_idx],npz['max_eigs_baseline'][b_idx],c='',marker='o',s=ms)
+    plt.scatter(npz['norms_traverse'][t_idx],npz['max_eigs_traverse'][t_idx],c='k',marker='+',s=ms)
     plt.legend(['B','T'],loc='upper left')
     norm_max = max(npz['norms_baseline'].max(),npz['norms_traverse'].max())
     plt.xlim([-.1*norm_max,1.1*norm_max])
     # plt.ylim([-1,15])
     plt.xlabel('Norm')
-    plt.ylabel('# of unstable directions')
+    # plt.ylabel('# of unstable directions')
+    plt.ylabel('Max eigenvalue')
+    # plt.gca().set_yscale('log',basey=2)
     plt.subplot(1,2,2).clear()
-    plt.hist([npz['num_big_eigs_baseline'],npz['num_big_eigs_traverse']],color=['k','w'],bins=range(N+1))
-    plt.legend(['B','T'],loc='upper right')
-    plt.xlabel('# of unstable directions')
+    # plt.hist([npz['num_big_eigs_baseline'],npz['num_big_eigs_traverse']],color=['k','w'],bins=range(N+1))
+    # big_max = max(npz['num_big_eigs_baseline'].max(),npz['num_big_eigs_traverse'].max())
+    # plt.hist([npz['num_big_eigs_baseline'],npz['num_big_eigs_traverse']],color=['k','w'],bins=range(int(big_max+1)))
+    # eig_max = max(npz['max_eigs_baseline'].max(),npz['max_eigs_traverse'].max())
+    # plt.hist([npz['max_eigs_baseline'],npz['max_eigs_traverse']],color=['k','w'],bins=np.linspace(0,eig_max,10))
+    # plt.legend(['B','T'],loc='upper right')
+    # plt.xlabel('# of unstable directions')
+    # plt.xlabel('Max eigenvalue')
+    # plt.ylabel('# of fixed points')
+    bs = npz['max_eigs_baseline'] < 1 
+    ts = npz['max_eigs_traverse'] < 1 
+    plt.hist([npz['norms_baseline'][bs],npz['norms_traverse'][ts],npz['norms_baseline'][~bs],npz['norms_traverse'][~ts]],color=np.array([[0.0,0.33,0.66,1.0]]).T*np.ones((1,3)),bins=range(int(np.ceil(norm_max+1))),align='mid')
+    plt.legend(['B st','T st','B un','T un'],loc='upper left')
+    plt.xlabel('Norm')
     plt.ylabel('# of fixed points')
-    plt.tight_layout()
+    plt.gca().set_yscale('log',basey=2)
+    # plt.tight_layout()
     # plt.xlim([-30,50])
     # plt.xticks(range(-30,51,10),['']+['$2^{%d}$'%xl for xl in range(-20,51,10)])
             
@@ -869,11 +893,12 @@ def show_tvb_stab_results(test_data_ids):
     Ns = np.array([r['N'] for r in results])
     uNs = np.unique(Ns)
     handles = []
+    # plt.figure(figsize=(3,1))
     # handles.append(scatter_with_errors(Ns, uNs, np.array([r['mean_dist'] for r in results])))
-    handles.append(scatter_with_errors(Ns, uNs, np.array([r['avg_num_big_traverse'] for r in results]), 'o','none'))
-    handles.append(scatter_with_errors(Ns, uNs, np.array([r['avg_num_big_baseline'] for r in results]), 'd','none'))
-    handles.append(scatter_with_errors(Ns, uNs, np.array([r['min_num_big_traverse'] for r in results]), '^','none'))
-    handles.append(scatter_with_errors(Ns, uNs, np.array([r['min_num_big_baseline'] for r in results]), 'x','k'))
+    handles.append(scatter_with_errors(Ns, uNs, np.log2(np.array([r['num_stable_traverse'] for r in results])+1), 'o','none'))
+    handles.append(scatter_with_errors(Ns, uNs, np.log2(np.array([r['num_stable_baseline'] for r in results])+1), 'd','none'))
+    handles.append(scatter_with_errors(Ns, uNs, np.log2(np.array([r['T']-r['num_stable_traverse'] for r in results])+1), '^','none'))
+    handles.append(scatter_with_errors(Ns, uNs, np.log2(np.array([r['B']-r['num_stable_baseline'] for r in results])+1), 'x','k'))
     # handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist_p'] for r in results]),'^'))
     # handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist_p'] for r in results]),'v'))
     # handles.append(scatter_with_errors(Ns, uNs, np.array([r['mean_dist_p'] for r in results]), 'd')) # accidental tuple
@@ -881,17 +906,19 @@ def show_tvb_stab_results(test_data_ids):
     # handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist_v'] for r in results]),'^','k'))
     # handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist_v'] for r in results]),'^','none'))
     # plt.legend(handles, ['Traverse','Baseline'], loc='upper left')
-    plt.legend(handles, ['T (avg)','B (avg)','T (min)','B (min)'], loc='upper left')
-    plt.xlim([uNs[0]-1,uNs[-1]+1])
-    # plt.ylim([-1,15])
-    plt.ylabel('# of unstable directions')
+    plt.legend(handles, ['T stable','B stable','T unstable','B unstable'], loc='upper left')
+    plt.xlim([2**.5,2**.5*uNs[-1]])
+    # plt.ylim([-1,25])
+    plt.ylabel('# of fixed points')
     # plt.xlabel('N')
     #plt.title('Traverse vs Baseline')
     # plt.draw()
     # ytick_labels = plt.gca().get_yticklabels()
     # plt.gca().set_yticklabels(['2^%s'%(yl.get_text()) for yl in ytick_labels])
-    # plt.yticks(range(-1,15,2),['0']+['$2^{%d}$'%yl for yl in range(1,15,2)])
-    plt.tight_layout()
+    plt.yticks(range(-2,14,2),['$2^{%d}$'%yl for yl in range(-2,14,2)])
+    plt.gca().set_xscale('log',basex=2)
+    plt.gcf().set_size_inches(8.0,4.0)
+    # plt.tight_layout()
     plt.show()
 
 def show_tvb_runtimes(test_data_ids):

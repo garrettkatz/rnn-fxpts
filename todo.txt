@@ -1,3 +1,6 @@
+rerun all full_base stability (again!) with max_eigs
+consistent figure sizes (at least widths)
+as consistent as possible in log vs normal axis scaling while still legible
 make fxpt_experiments more consolidated and consistent
     filename prefixes/suffixes for different experiments
     encapsulate duplicated code
