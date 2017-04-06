@@ -80,6 +80,20 @@ def fiber_fig():
     plt.ylabel('$v_2$',rotation=0)
     plt.show()
 
+def ex1_fig():
+    mpl.rcParams.update({'font.size': 12})
+    v = np.linspace(-1.5,1.5,100)
+    for w,c in [(2,'-'),(1,'--'),(-1,'.')]:
+        plt.plot(v,np.tanh(w*v)-v,'k'+c)
+    mpl.rcParams['mathtext.default'] = 'it'
+    plt.legend(['$w=+2$','$w=+1$','$w=-1$'],fontsize=18)
+    plt.plot(v,np.zeros(v.shape),'k-')
+    plt.xlabel('$v$',fontsize=18)
+    plt.ylabel('$\sigma(wv)-v$',fontsize=18)
+    plt.ylim([-.75,.75])
+    plt.tight_layout()
+    plt.show()
+
 def bad_c_fig():
     """
     Illustrate critical c, regular regions, fiber topology on a 3-neuron network

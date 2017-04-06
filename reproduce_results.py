@@ -57,11 +57,11 @@ if scale_option == 'full':
     max_traverse_steps = 2**20
     max_fxpts = None
 if scale_option == 'big':
-    network_sizes = [1000]
-    num_samples = [3]
+    network_sizes = [256,512,1024]
+    num_samples = [5,5,5]
     _ = fe.generate_test_data(network_sizes, num_samples, test_data_id='big_base.npz',refine_cap=200)
     max_traverse_steps = 2**14
-    max_fxpts = 10
+    max_fxpts = 32
 if scale_option == 'big256':
     network_sizes = [256]
     num_samples = [3]
@@ -84,21 +84,21 @@ for dirname in ['results/','logs/']:
 
 # Comparison with baseline
 test_data_id = '%s_base'%scale_option
-# _ = fe.run_traverse_experiments(test_data_id,num_procs,max_traverse_steps,max_fxpts)
-# _ = fe.run_baseline_experiments(test_data_id,num_procs)
-# _ = fe.run_TvB_experiments(test_data_id,num_procs)
+_ = fe.run_traverse_experiments(test_data_id,num_procs,max_traverse_steps,max_fxpts)
+_ = fe.run_baseline_experiments(test_data_id,num_procs)
+_ = fe.run_TvB_experiments(test_data_id,num_procs)
 _ = fe.run_TvB_stability_experiments(test_data_id,num_procs)
 
-# if scale_option in ['micro','mini','full']:
-#     # Comparision of c choices
-#     test_data_id = '%s_choose'%scale_option
-#     _ = fe.run_Wc_experiments(test_data_id, num_procs)
+if scale_option in ['micro','mini','full']:
+    # Comparision of c choices
+    test_data_id = '%s_choose'%scale_option
+    _ = fe.run_Wc_experiments(test_data_id, num_procs)
 
-#     # Assessment of round-off errors
-#     test_data_id = '%s_base'%scale_option
-#     _ = ro.get_relative_errors(test_data_id)
-#     _ = ro.run_traverse_rd(test_data_id, ro_Ns, num_procs)
-#     _ = ro.run_baseline_rd(test_data_id, ro_Ns, num_procs)
+    # Assessment of round-off errors
+    test_data_id = '%s_base'%scale_option
+    _ = ro.get_relative_errors(test_data_id)
+    _ = ro.run_traverse_rd(test_data_id, ro_Ns, num_procs)
+    _ = ro.run_baseline_rd(test_data_id, ro_Ns, num_procs)
 
 total_time = time.time()-start_time
 print('Finished.  Took a total of %f hours.'%(total_time/3600.))
