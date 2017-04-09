@@ -529,6 +529,11 @@ def test_TvB(test_data_id, N, s, logfilename=os.devnull, save_result=False, save
     traverse_npz = np.load('results/traverse_%s_N_%d_s_%d.npz'%(test_data_id, N, s))
     fxV_baseline = baseline_npz["fxV_unique"]
     fxV_traverse = traverse_npz["fxV_unique"]
+    #### !!! temp simple unique test
+    neighbors = lambda X, y: (np.fabs(X-y) < 10**-10).all(axis=0)
+    fxV_baseline = rfx.get_unique_points_recursively(fxV_baseline, neighbors=neighbors)
+    fxV_traverse = rfx.get_unique_points_recursively(fxV_traverse, neighbors=neighbors)
+
     T = fxV_traverse.shape[1]
     B = fxV_baseline.shape[1]
 
@@ -546,7 +551,7 @@ def test_TvB(test_data_id, N, s, logfilename=os.devnull, save_result=False, save
     # Get union
     rfx.hardwrite(logfile,'unioning %d + %d...\n'%(T, B))
     fxV_union = np.concatenate((fxV_traverse, fxV_baseline), axis=1)
-    neighbors = lambda X, y: rfx.identical_fixed_points(W, X, y)[0]
+    # neighbors = lambda X, y: rfx.identical_fixed_points(W, X, y)[0]
     fxV_union = rfx.get_unique_points_recursively(fxV_union, neighbors=neighbors)
     TB = fxV_union.shape[1]
     finish_str = 'N:%d,T:%d, B:%d, T|B:%d, T&B:%d, T-B:%d(%f), B-T:%d(%f)'%(N,T,B,TB,T+B-TB,TB-B,1.*(TB-B)/TB,TB-T,1.*(TB-T)/TB)

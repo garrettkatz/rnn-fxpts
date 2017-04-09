@@ -16,6 +16,7 @@ def hardwrite(f,data):
     """
     Force file write to disk
     """
+    if f.name == os.devnull: return
     f.write(data)
     f.flush()
     os.fsync(f)
@@ -506,7 +507,7 @@ def traverse(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_traverse_
             status = "Success"
             break
 
-        if len(fxV) == max_fxpts:
+        if max_fxpts is not None and len(fxV) >= max_fxpts:
             status = "Max fxpts found"
             break
 

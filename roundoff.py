@@ -316,8 +316,19 @@ def show_baseline_rd_fig(test_data_ids, Ns, samp_range):
             else: in_rr[in_rr == 0] = 2**(-30)
             ax = plt.subplot(len(samp_range),len(Ns),sp)
             sp += 1
+            if np.isinf(out_rr).any():
+                if np.isinf(out_rr).all(): out_rr[:] = 4*in_rr.max()
+                else: out_rr[np.isinf(out_rr)] = 4*out_rr[~np.isinf(out_rr)].max()
+            print('out_rr:')
+            print(out_rr.shape)
+            print((out_rr==0).sum())
+            print(np.isinf(in_rr).sum())
+            print(np.isinf(out_rr).sum())
+            print(np.isnan(out_rr).sum())
             if out_rr.shape[0] > 0: plt.hist(np.log2(out_rr),bins=30,log=log,facecolor='k')
+            # if out_rr.shape[0] > 0: plt.hist(out_rr,bins=30,facecolor='k')
             plt.hist(np.log2(in_rr),bins=10,log=log,facecolor='w')
+            # plt.hist(in_rr,bins=10,facecolor='w')
             if N == Ns[0]:
                 plt.ylabel('# of pairs')
             if samp == samp_range[0]:
