@@ -808,7 +808,7 @@ def show_tvb_dist_results(test_data_ids=['dl50','dm10','dh5']):
     # plt.legend(handles, ['$||T - T_{mean}||$','$||B - B_{mean}||$','$||T^{+} - T^{+}_{mean}||$','$||B^{+} - B^{+}_{mean}||$','$||T^{+}_{mean} - B^{+}_{mean}||$'], loc='upper left')
     handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist_v'] for r in results]),'^','k'))
     handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist_v'] for r in results]),'^','none'))
-    plt.legend(handles, ['$||T - T_{mean}||$','$||B - B_{mean}||$','$||T - [T]||$','$||B - [B]||$'], loc='upper left')
+    plt.legend(handles, ['$||T - \text{mean}(T)||$','$||B - \text{mean}(B)||$','$||T - \test{sign}(T)||$','$||B - \text{sign}(B)||$'], loc='upper left')
     # plt.xlim([uNs[0]-1,uNs[-1]+1])
     plt.xlim([2**.5,2*uNs[-1]])
     plt.gca().set_xscale('log',basex=2)

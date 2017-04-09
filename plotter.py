@@ -40,11 +40,12 @@ def text(ax, X, strs, *args, **kwargs):
     strs[p] should be the p^{th} string to plot
     args and kwargs should be as in matplotlib.Axes.plot
     """
-    if X.shape[0]==2:
-        ax.text(X[0,:],X[1,:], strs, *args, **kwargs)
-    elif X.shape[0]==3:
-        #ax = plt.gca(projection="3d")
-        ax.text(X[0,:],X[1,:],X[2,:], strs, *args, **kwargs)
+    for j in range(X.shape[1]):
+        if X.shape[0]==2:
+            ax.text(X[0,j],X[1,j], strs[j], *args, **kwargs)
+        elif X.shape[0]==3:
+            #ax = plt.gca(projection="3d")
+            ax.text(X[0,j],X[1,j],X[2,j], strs[j], *args, **kwargs)
 
 def quiver(ax, X, U, *args, **kwargs):
     """

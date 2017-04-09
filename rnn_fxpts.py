@@ -198,8 +198,8 @@ def brute_fiber(W, c, max_iters=1000):
     c should be the direction vector (a single column numpy.array)
     max_iters is the maximum steps allowed for traversal on each grid sample
     returns fxpts, fiber, where
-      fxpts[i][s][:,p] is the p^{th} fixed point found, and
-      fiber[i][s][:,n] is the n^{th} point along traversal,
+      fxpts[i][:,p] is the p^{th} fixed point found, and
+      fiber[i][:,n] is the n^{th} point along traversal,
     for the traversal from the i^{th} grid sample.
     The component and its negative are indexed by s == 0 or 1, respectively.
     """

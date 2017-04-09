@@ -58,13 +58,15 @@ def fiber_fig():
     """
     Show an example of a directional fiber for a two-neuron network
     """
-    mpl.rcParams['mathtext.default'] = 'regular'
+    # mpl.rcParams['mathtext.default'] = 'regular'
+    mpl.rcParams['mathtext.default'] = 'it'
+    mpl.rcParams.update({'font.size': 18})
     W = np.array([[1.5, 0.05],[-0.01, 1.5]])
     c = np.array([[1.],[2]])
     _, fxV, VA, _, _, _, _ = rfx.traverse(W, c=c)
     fxV, _ = rfx.post_process_fxpts(W, fxV)
     VA = np.concatenate((-VA[:2,::-1],VA[:2,:]), axis=1)
-    plt.figure(figsize=(6,6))
+    plt.figure(figsize=(7,7))
     ptr.plot(plt.gca(), VA[:2,:],'-k')
     ptr.scatter(plt.gca(), fxV, 75, c=((0,0,0),))
     V = ptr.lattice([-1.25,-1.25],[1.25,1.25], 20)
@@ -75,18 +77,21 @@ def fiber_fig():
     C = np.tanh(W.dot(V))-V
     ptr.quiver(plt.gca(),V,C,scale=.005,units='dots',width=2,headwidth=5)
     plt.xlim([-1.25,1.25])
-    plt.xlabel('$v_1$')
+    plt.xlabel('$v_1$',fontsize=24)
     plt.ylim([-1.25,1.25])
-    plt.ylabel('$v_2$',rotation=0)
+    plt.ylabel('$v_2$',fontsize=24,rotation=0)
+    # plt.tight_layout()
     plt.show()
 
 def ex1_fig():
+    plt.figure(figsize=(8,4.5))
     mpl.rcParams.update({'font.size': 12})
     v = np.linspace(-1.5,1.5,100)
-    for w,c in [(2,'-'),(1,'--'),(-1,'.')]:
+    wc = [(5,'-'),(1,'--'),(.5,'.'),(-1,'.-')]
+    for w,c in wc:
         plt.plot(v,np.tanh(w*v)-v,'k'+c)
     mpl.rcParams['mathtext.default'] = 'it'
-    plt.legend(['$w=+2$','$w=+1$','$w=-1$'],fontsize=18)
+    plt.legend(['$w=%s$'%w for w,_ in wc],fontsize=18)
     plt.plot(v,np.zeros(v.shape),'k-')
     plt.xlabel('$v$',fontsize=18)
     plt.ylabel('$\sigma(wv)-v$',fontsize=18)
