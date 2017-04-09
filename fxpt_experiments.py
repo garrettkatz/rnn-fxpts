@@ -1054,7 +1054,8 @@ def show_tvb_rawcounts(test_data_ids):
     plt.show()
 
 # def show_Wc_results(results):
-def show_Wc_results(test_data_id='dl15'):
+# def show_Wc_results(test_data_id='dl15'):
+def show_Wc_results(test_data_id='full_choose'):
     """
     Plot the results of c choice comparison
     test_data_id should be as in generate_test_data (without file extension)
@@ -1064,21 +1065,23 @@ def show_Wc_results(test_data_id='dl15'):
     Ns = np.array([r[0]['N'] for r in results])
     uNs = np.unique(Ns)
     handles = []
-    y = np.array([r[0]['num_fxV_union'] for r in results])
-    handles.append(scatter_with_errors(Ns, uNs, np.log2(y), 'o','k'))
+    plt.figure(figsize=(8,4.2))
+    y = [max(r[0]['num_fxV_union'],0.5) for r in results]
+    handles.append(scatter_with_errors(Ns, uNs, y, 'o','k',log=True,logmin=.5))
     for (fun, m,fc) in [(np.max,'^','none'),(np.mean,'d','k',),(np.min,'v','none')]:
-        y = np.array([fun([r['num_fxV_unique'] for r in res]) for res in results])
-        handles.append(scatter_with_errors(Ns, uNs, np.log2(y),m,fc))
+        y = [max(fun([r['num_fxV_unique'] for r in res]),0.5) for res in results]
+        handles.append(scatter_with_errors(Ns, uNs, y,m,fc,log=True,logmin=0.5))
     handles.append(plt.plot(uNs, np.log2(uNs), 'dk--')[0])
     plt.legend(handles, ['Union','Max','Mean','Min','Known'], loc='upper left')
-    plt.xlim([uNs[0]-1,uNs[-1]+1])
-    plt.ylim([0,10])
+    plt.xlim([uNs[0]-.5,uNs[-1]+.5])
     plt.ylabel('# of fixed points')
     #plt.title('Different Regular Regions')
     # plt.draw()
     # ytick_labels = plt.gca().get_yticklabels()
     # plt.gca().set_yticklabels(['2^%s'%(yl.get_text()) for yl in ytick_labels])
-    plt.yticks(range(0,11,2),['$2^{%d}$'%yl for yl in range(0,11,2)])
+    plt.yticks(range(0,11,1),['$2^{%d}$'%yl for yl in range(0,11,1)])
+    plt.ylim([0,9])
+    plt.tight_layout()
     plt.show()
 
 def scatter_with_errors(Ns, uNs, y, marker, facecolor, show_scatter=False, log=False,logmin=1):
