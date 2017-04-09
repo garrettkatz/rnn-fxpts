@@ -755,7 +755,7 @@ def show_tvb_results(test_data_ids=['dl50','dm10','dh5']):
         #         curr_results.append(result)
         # results += curr_results
         # save_pkl_file('results/tvb_%s.pkl'%test_data_id, curr_results)
-    results = [r for r in results if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1000]]
+    results = [r for r in results if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1024]]
     mpl.rcParams['mathtext.default'] = 'regular'
     mpl.rcParams.update({'figure.autolayout': True})
     mpl.rcParams.update({'font.size': 12})
@@ -763,15 +763,17 @@ def show_tvb_results(test_data_ids=['dl50','dm10','dh5']):
     uNs = np.unique(Ns)
     dats = [('T|B','v','k'),('T&B','^','none'),('T-B','s','none'),('B-T','o','k')]
     handles = []
+    plt.figure(figsize=(9,4))
     for ym in dats:
-        y = np.array([np.log2(r[ym[0]]) if r[ym[0]]>0 else -1 for r in results])
-        handles.append(scatter_with_errors(Ns, uNs, y, ym[1],ym[2]))
-    # handles.append(scatter_with_errors(Ns, uNs, np.log2(Ns), marker='d'))
+        y = [r[ym[0]] if r[ym[0]]>0 else -1 for r in results]
+        handles.append(scatter_with_errors(Ns, uNs, y, ym[1],ym[2],log=True))
+        # y = [r[ym[0]] for r in results]
+        # handles.append(scatter_with_errors(Ns, uNs, y, ym[1],ym[2]))
     handles.append(plt.plot(uNs, np.log2(uNs), 'dk--', ms=9)[0])
-    # plt.legend(handles, [ym[0] for ym in dats]+['Known'], loc='upper left')
-    plt.legend(handles, ['$T\cup\,B$', '$T\cap\,B$', '$T-B$', '$B-T$', 'Known'], loc='upper right')
-    # plt.xlim([uNs[0]-1,uNs[-1]+1])
-    plt.ylim([-1,15])
+    # handles.append(plt.plot(uNs, uNs, 'dk--', ms=9)[0])
+    plt.legend(handles, ['$T\cup\,B$', '$T\cap\,B$', '$T-B$', '$B-T$', 'Known'], loc='upper left')
+    # plt.ylim([-1,15])
+    # plt.gca().set_yscale('log',basey=2)
     plt.xlim([2**.5,2*uNs[-1]])
     plt.gca().set_xscale('log',basex=2)
     plt.ylabel('# of fixed points')
@@ -792,27 +794,29 @@ def show_tvb_dist_results(test_data_ids=['dl50','dm10','dh5']):
     for test_data_id in test_data_ids:
         # results += load_pkl_file('results/tvb_dist_%s.pkl'%test_data_id)
         results += load_pkl_file('results/tvb_%s.pkl'%test_data_id)
-    results = [r for r in results if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1000]]
+    results = [r for r in results if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1024]]
     mpl.rcParams['mathtext.default'] = 'regular'
     # mpl.rcParams.update({'figure.autolayout': True})
     mpl.rcParams.update({'font.size': 12})
     Ns = np.array([r['N'] for r in results])
     uNs = np.unique(Ns)
     handles = []
+    plt.figure(figsize=(8,3.5))
     # handles.append(scatter_with_errors(Ns, uNs, np.array([r['mean_dist'] for r in results])))
-    handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist'] for r in results]), 'o','k'))
-    handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist'] for r in results]), 'o','none'))
+    handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist'] for r in results]), 'o','k',log=True,logmin=2**-5))
+    handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist'] for r in results]), 'o','none',log=True,logmin=2**-5))
     # handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist_p'] for r in results]),'^'))
     # handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist_p'] for r in results]),'v'))
     # handles.append(scatter_with_errors(Ns, uNs, np.array([r['mean_dist_p'] for r in results]), 'd')) # accidental tuple
     # plt.legend(handles, ['$||T - T_{mean}||$','$||B - B_{mean}||$','$||T^{+} - T^{+}_{mean}||$','$||B^{+} - B^{+}_{mean}||$','$||T^{+}_{mean} - B^{+}_{mean}||$'], loc='upper left')
-    handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist_v'] for r in results]),'^','k'))
-    handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist_v'] for r in results]),'^','none'))
-    plt.legend(handles, ['$||T - \text{mean}(T)||$','$||B - \text{mean}(B)||$','$||T - \test{sign}(T)||$','$||B - \text{sign}(B)||$'], loc='upper left')
+    handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist_v'] for r in results]),'^','k',log=True,logmin=2**-5))
+    handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist_v'] for r in results]),'^','none',log=True,logmin=2**-5))
+    plt.legend(handles, ['$||T - mean(T)||$','$||B - mean(B)||$','$||T - sign(T)||$','$||B - sign(B)||$'], loc='lower center')
     # plt.xlim([uNs[0]-1,uNs[-1]+1])
     plt.xlim([2**.5,2*uNs[-1]])
     plt.gca().set_xscale('log',basex=2)
-    # plt.ylim([-1,15])
+    plt.ylim([-5,5])
+    plt.yticks(range(-5,5,2),['$2^{%d}$'%yl for yl in range(-5,5,2)])
     plt.ylabel('Average distances')
     #plt.title('Traverse vs Baseline')
     # plt.draw()
@@ -822,13 +826,14 @@ def show_tvb_dist_results(test_data_ids=['dl50','dm10','dh5']):
     # plt.tight_layout()
     plt.show()
 
-def show_tvb_stab_result(test_data_id, N, s):
+def show_tvb_stab_result(test_data_id='full_base', N=24, s=0):
     mpl.rcParams['mathtext.default'] = 'regular'
     # mpl.rcParams.update({'figure.autolayout': True})
     mpl.rcParams.update({'font.size': 16})
     results = load_pkl_file('results/TvB_stable_%s_N_%d_s_%d.pkl'%(test_data_id, N, s))
     npz = load_npz_file('results/TvB_stable_%s_N_%d_s_%d.npz'%(test_data_id, N, s))
-    plt.subplot(1,2,1).clear()
+    plt.figure(figsize=(8,4))
+    plt.subplot(1,2,1)
     ms = 2*(mpl.rcParams['lines.markersize'] ** 2)
     # br = 0.25*np.random.rand(*npz['norms_baseline'].shape)
     # tr = 0.25*np.random.rand(*npz['norms_traverse'].shape)
@@ -836,6 +841,7 @@ def show_tvb_stab_result(test_data_id, N, s):
     # plt.scatter(npz['norms_traverse'],npz['num_big_eigs_traverse']+.5+tr,c='k',marker='+',s=ms)
     t_idx = np.random.rand(*npz['norms_traverse'].shape) < .05
     b_idx = np.random.rand(*npz['norms_baseline'].shape) < .05
+    # npz['max_eigs_%s'%method_key] = max_eigs[method_key]
     plt.scatter(npz['norms_baseline'][b_idx],npz['max_eigs_baseline'][b_idx],c='',marker='o',s=ms)
     plt.scatter(npz['norms_traverse'][t_idx],npz['max_eigs_traverse'][t_idx],c='k',marker='+',s=ms)
     plt.legend(['B','T'],loc='upper left')
@@ -844,7 +850,7 @@ def show_tvb_stab_result(test_data_id, N, s):
     # plt.ylim([-1,15])
     plt.xlabel('Norm')
     # plt.ylabel('# of unstable directions')
-    plt.ylabel('Max eigenvalue')
+    plt.ylabel('Max. eig. mag.')
     # plt.gca().set_yscale('log',basey=2)
     plt.subplot(1,2,2).clear()
     # plt.hist([npz['num_big_eigs_baseline'],npz['num_big_eigs_traverse']],color=['k','w'],bins=range(N+1))
@@ -886,7 +892,7 @@ def show_tvb_stab_results(test_data_ids):
         #     next_results[r]['min_big_eigs_baseline'] = npz['num_big_eigs_baseline'].min()
         # # save_pkl_file('results/tvb_stab_%s.pkl'%test_data_id,next_results)
         results += next_results
-    results = [r for r in results if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1000]]
+    results = [r for r in results if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1024]]
     mpl.rcParams['mathtext.default'] = 'regular'
     # mpl.rcParams.update({'figure.autolayout': True})
     mpl.rcParams.update({'font.size': 12})
@@ -934,8 +940,8 @@ def show_tvb_runtimes(test_data_ids):
     for test_data_id in test_data_ids:
         t_res += load_pkl_file('results/traverse_%s.pkl'%test_data_id)
         b_res += load_pkl_file('results/baseline_%s.pkl'%test_data_id)
-    t_res = [r for r in t_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1000]]
-    b_res = [r for r in b_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1000]]
+    t_res = [r for r in t_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1024]]
+    b_res = [r for r in b_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1024]]
 
     Ns = np.array([r['N'] for r in t_res])
     uNs = np.unique(Ns)
@@ -971,22 +977,29 @@ def show_tvb_work(test_data_ids):
     for test_data_id in test_data_ids:
         t_res += load_pkl_file('results/traverse_%s.pkl'%test_data_id)
         b_res += load_pkl_file('results/baseline_%s.pkl'%test_data_id)
-    t_res = [r for r in t_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1000]]
-    b_res = [r for r in b_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1000]]
+    t_res = [r for r in t_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1024]]
+    b_res = [r for r in b_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1024]]
 
     Ns = np.array([r['N'] for r in t_res])
     uNs = np.unique(Ns)
     handles = []
-    handles.append(scatter_with_errors(Ns, uNs, np.log2((np.array([(r['runtime']+r['post_runtime'])/r['num_fxV_unique'] for r in b_res]))/60), 'o','none'))
-    handles.append(scatter_with_errors(Ns, uNs, np.log2((np.array([(r['runtime'])/r['num_fxV_unique'] for r in b_res]))/60), 'x','none'))
-    handles.append(scatter_with_errors(Ns, uNs, np.log2((np.array([r['runtime']/r['num_fxV_unique'] for r in t_res]))/60), '^','none'))
+    plt.figure(figsize=(8,3))
+    ylog = True
+    if ylog:
+        handles.append(scatter_with_errors(Ns, uNs, [(r['runtime']+r['post_runtime'])/r['num_fxV_unique']/60 for r in b_res], 'o','none',log=True,logmin=2**-13))
+        handles.append(scatter_with_errors(Ns, uNs, [r['runtime']/r['num_fxV_unique']/60 for r in b_res], 'x','none',log=True,logmin=2**-13))
+        handles.append(scatter_with_errors(Ns, uNs, [r['runtime']/r['num_fxV_unique']/60 for r in t_res], '^','none',log=True,logmin=2**-13))
+        plt.yticks(range(-13,16,4),['$2^{%d}$'%yl for yl in range(-13,16,4)])
+        plt.ylim([-14,15])
+    else:
+        handles.append(scatter_with_errors(Ns, uNs, [(r['runtime']+r['post_runtime'])/r['num_fxV_unique']/60 for r in b_res], 'o','none'))
+        handles.append(scatter_with_errors(Ns, uNs, [r['runtime']/r['num_fxV_unique']/60 for r in b_res], 'x','none'))
+        handles.append(scatter_with_errors(Ns, uNs, [r['runtime']/r['num_fxV_unique']/60 for r in t_res], '^','none'))
     plt.legend(handles, ['B with post-processing','B no post-processing','T with post-processing'], loc='upper left')
     # plt.xlim([uNs[0]-1,uNs[-1]+1])
     plt.xlim([2**.5,1.5*uNs[-1]])
     plt.gca().set_xscale('log',basex=2)
     plt.ylabel('Minutes per fixed point found')
-    plt.yticks(range(-13,13,2),['$2^{%d}$'%yl for yl in range(-13,13,2)])
-    plt.ylim([-14,6])
     # plt.gca().set_yscale('log',basey=2)
     #plt.title('Traverse vs Baseline')
     # plt.draw()
@@ -1010,14 +1023,14 @@ def show_tvb_rawcounts(test_data_ids):
     for test_data_id in test_data_ids:
         t_res += load_pkl_file('results/traverse_%s.pkl'%test_data_id)
         b_res += load_pkl_file('results/baseline_%s.pkl'%test_data_id)
-    t_res = [r for r in t_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1000]]
-    b_res = [r for r in b_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1000]]
+    t_res = [r for r in t_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1024]]
+    b_res = [r for r in b_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1024]]
 
     Ns = np.array([r['N'] for r in t_res])
     uNs = np.unique(Ns)
     handles = []
-    handles.append(scatter_with_errors(Ns, uNs, np.log2(np.array([r['num_fxV'] for r in b_res])), 'o', 'k'))
-    handles.append(scatter_with_errors(Ns, uNs, np.log2(np.array([r['num_fxV'] for r in t_res])), 'o', 'none'))
+    handles.append(scatter_with_errors(Ns, uNs, [r['num_fxV'] for r in b_res], 'o', 'k',log=True))
+    handles.append(scatter_with_errors(Ns, uNs, [r['num_fxV'] for r in t_res], 'o', 'none',log=True))
     plt.legend(handles, ['Raw B counts','Raw T counts'], loc='lower right')
     plt.xlim([uNs[0]-1,uNs[-1]+1])
     # plt.ylim([-2,90])
@@ -1059,7 +1072,7 @@ def show_Wc_results(test_data_id='dl15'):
     plt.yticks(range(0,11,2),['$2^{%d}$'%yl for yl in range(0,11,2)])
     plt.show()
 
-def scatter_with_errors(Ns, uNs, y, marker, facecolor, show_scatter=False):
+def scatter_with_errors(Ns, uNs, y, marker, facecolor, show_scatter=False, log=False,logmin=1):
     """
     Helper function for generating scatter plots with error bars for means and standard deviations.
     Ns[i] should be the size of the i^{th} network being plotted
@@ -1069,14 +1082,25 @@ def scatter_with_errors(Ns, uNs, y, marker, facecolor, show_scatter=False):
     if show_scatter==False, only means and standard deviations are shown for each network size N
     returns scat, a legend handle for use with matplotlib.pyplot.legend
     """
-    y_by_N = [y[Ns==N] for N in uNs]
-    y_by_N_means = [yy.mean() for yy in y_by_N]
-    y_by_N_stds = [yy.std() for yy in y_by_N]
+    y_by_N = np.array([np.array(y)[Ns==N] for N in uNs])
+    y_by_N_means = np.array([yy.mean() for yy in y_by_N])
+    y_by_N_stds = np.array([yy.std() for yy in y_by_N])
+    if log:
+        lo = y_by_N_means-y_by_N_stds
+        lo[lo <= 0] = logmin
+        y_by_N_means[y_by_N_means <= 0] = logmin
+        y_err = np.concatenate([
+            (np.log2(y_by_N_means)-np.log2(lo))[np.newaxis,:],
+            (np.log2(y_by_N_means+y_by_N_stds)-np.log2(y_by_N_means))[np.newaxis,:]],axis=0)
+        if show_scatter: y_by_N = np.log2(y_by_N)
+        y_by_N_means = np.log2(y_by_N_means)
+    else:
+        y_err = y_by_N_stds
     if show_scatter:
         scat = plt.scatter(Ns, y, s=30,marker=marker, facecolor=facecolor, edgecolor='0.7')
-        plt.errorbar(uNs, y_by_N_means, yerr=y_by_N_stds, ecolor='k', c='k', marker=marker, ms=9, mfc='none')
+        plt.errorbar(uNs, y_by_N_means, yerr=y_err, ecolor='k', c='k', marker=marker, ms=9, mfc='none')
     else:
-        scat = plt.errorbar(uNs, y_by_N_means, yerr=y_by_N_stds, ecolor='k', c='k', marker=marker, ms=9, mfc=facecolor)
+        scat = plt.errorbar(uNs, y_by_N_means, yerr=y_err, ecolor='k', c='k', marker=marker, ms=9, mfc=facecolor)
     plt.xlabel('N')
     return scat
 
