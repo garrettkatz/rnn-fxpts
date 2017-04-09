@@ -865,7 +865,9 @@ def show_tvb_stab_result(test_data_id='full_base', N=24, s=0):
     # plt.ylabel('# of fixed points')
     bs = npz['max_eigs_baseline'] < 1 
     ts = npz['max_eigs_traverse'] < 1 
-    plt.hist([npz['norms_baseline'][bs],npz['norms_traverse'][ts],npz['norms_baseline'][~bs],npz['norms_traverse'][~ts]],color=np.array([[0.0,0.33,0.66,1.0]]).T*np.ones((1,3)),bins=range(int(np.ceil(norm_max+1))),align='mid')
+    # plt.hist([npz['norms_baseline'][bs],npz['norms_traverse'][ts],npz['norms_baseline'][~bs],npz['norms_traverse'][~ts]],color=np.array([[0.0,0.33,0.66,1.0]]).T*np.ones((1,3)),bins=range(int(np.ceil(norm_max+1))),align='mid')
+    plt.hist([npz['norms_baseline'][bs],npz['norms_traverse'][ts],npz['norms_baseline'][~bs],npz['norms_traverse'][~ts]],bins=range(int(np.ceil(norm_max+1))),align='mid')
+    plt.xlim([0,np.ceil(norm_max+1)])
     plt.legend(['B st','T st','B un','T un'],loc='upper left')
     plt.xlabel('Norm')
     plt.ylabel('# of fixed points')
@@ -900,12 +902,12 @@ def show_tvb_stab_results(test_data_ids):
     Ns = np.array([r['N'] for r in results])
     uNs = np.unique(Ns)
     handles = []
-    # plt.figure(figsize=(3,1))
+    plt.figure(figsize=(8,3.5))
     # handles.append(scatter_with_errors(Ns, uNs, np.array([r['mean_dist'] for r in results])))
-    handles.append(scatter_with_errors(Ns, uNs, np.log2(np.array([r['num_stable_traverse'] for r in results])+1), 'o','none'))
-    handles.append(scatter_with_errors(Ns, uNs, np.log2(np.array([r['num_stable_baseline'] for r in results])+1), 'd','none'))
-    handles.append(scatter_with_errors(Ns, uNs, np.log2(np.array([r['T']-r['num_stable_traverse'] for r in results])+1), '^','none'))
-    handles.append(scatter_with_errors(Ns, uNs, np.log2(np.array([r['B']-r['num_stable_baseline'] for r in results])+1), 'x','k'))
+    handles.append(scatter_with_errors(Ns, uNs, [max(r['num_stable_traverse'],0.5) for r in results], 'o','none',log=True,logmin=0.5))
+    handles.append(scatter_with_errors(Ns, uNs, [max(r['num_stable_baseline'],0.5) for r in results], 'd','none',log=True,logmin=0.5))
+    handles.append(scatter_with_errors(Ns, uNs, [max(r['T']-r['num_stable_traverse'],0.5) for r in results], '^','none',log=True,logmin=0.5))
+    handles.append(scatter_with_errors(Ns, uNs, [max(r['B']-r['num_stable_baseline'],0.5) for r in results], 's','none',log=True,logmin=0.5))
     # handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist_p'] for r in results]),'^'))
     # handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist_p'] for r in results]),'v'))
     # handles.append(scatter_with_errors(Ns, uNs, np.array([r['mean_dist_p'] for r in results]), 'd')) # accidental tuple
@@ -913,7 +915,7 @@ def show_tvb_stab_results(test_data_ids):
     # handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist_v'] for r in results]),'^','k'))
     # handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist_v'] for r in results]),'^','none'))
     # plt.legend(handles, ['Traverse','Baseline'], loc='upper left')
-    plt.legend(handles, ['T stable','B stable','T unstable','B unstable'], loc='upper left')
+    plt.legend(handles, ['T st','B st','T un','B un'], loc='upper left')
     plt.xlim([2**.5,2**.5*uNs[-1]])
     # plt.ylim([-1,25])
     plt.ylabel('# of fixed points')
@@ -922,10 +924,10 @@ def show_tvb_stab_results(test_data_ids):
     # plt.draw()
     # ytick_labels = plt.gca().get_yticklabels()
     # plt.gca().set_yticklabels(['2^%s'%(yl.get_text()) for yl in ytick_labels])
-    plt.yticks(range(-2,14,2),['$2^{%d}$'%yl for yl in range(-2,14,2)])
+    plt.yticks(range(-1,13,2),['0']+['$2^{%d}$'%yl for yl in range(1,13,2)])
+    plt.ylim([-2,13])
     plt.gca().set_xscale('log',basex=2)
-    plt.gcf().set_size_inches(8.0,4.0)
-    # plt.tight_layout()
+    plt.tight_layout()
     plt.show()
 
 def show_tvb_runtimes(test_data_ids):
