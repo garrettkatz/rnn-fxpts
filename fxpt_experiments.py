@@ -833,7 +833,7 @@ def show_tvb_stab_result(test_data_id='full_base', N=24, s=0):
     mpl.rcParams.update({'font.size': 16})
     results = load_pkl_file('results/TvB_stable_%s_N_%d_s_%d.pkl'%(test_data_id, N, s))
     npz = load_npz_file('results/TvB_stable_%s_N_%d_s_%d.npz'%(test_data_id, N, s))
-    plt.figure(figsize=(8,4))
+    plt.figure(figsize=(11,5))
     plt.subplot(1,2,1)
     ms = 2*(mpl.rcParams['lines.markersize'] ** 2)
     # br = 0.25*np.random.rand(*npz['norms_baseline'].shape)
@@ -865,16 +865,17 @@ def show_tvb_stab_result(test_data_id='full_base', N=24, s=0):
     # plt.ylabel('# of fixed points')
     bs = npz['max_eigs_baseline'] < 1 
     ts = npz['max_eigs_traverse'] < 1 
-    # plt.hist([npz['norms_baseline'][bs],npz['norms_traverse'][ts],npz['norms_baseline'][~bs],npz['norms_traverse'][~ts]],color=np.array([[0.0,0.33,0.66,1.0]]).T*np.ones((1,3)),bins=range(int(np.ceil(norm_max+1))),align='mid')
-    plt.hist([npz['norms_baseline'][bs],npz['norms_traverse'][ts],npz['norms_baseline'][~bs],npz['norms_traverse'][~ts]],bins=range(int(np.ceil(norm_max+1))),align='mid')
-    plt.xlim([0,np.ceil(norm_max+1)])
+    plt.hist([npz['norms_baseline'][bs],npz['norms_traverse'][ts],npz['norms_baseline'][~bs],npz['norms_traverse'][~ts]],color=np.array([[0.0,0.33,0.66,1.0]]).T*np.ones((1,3)),bins=range(int(np.ceil(norm_max+1))),align='mid')
+    # plt.hist([npz['norms_baseline'][bs],npz['norms_traverse'][ts],npz['norms_baseline'][~bs],npz['norms_traverse'][~ts]],bins=range(int(np.ceil(norm_max+1))),align='mid')
+    plt.xlim([0,np.ceil(norm_max)])
     plt.legend(['B st','T st','B un','T un'],loc='upper left')
     plt.xlabel('Norm')
     plt.ylabel('# of fixed points')
     plt.gca().set_yscale('log',basey=2)
-    # plt.tight_layout()
+    plt.tight_layout()
     # plt.xlim([-30,50])
     # plt.xticks(range(-30,51,10),['']+['$2^{%d}$'%xl for xl in range(-20,51,10)])
+    plt.show()
             
 def show_tvb_stab_results(test_data_ids):
     """
