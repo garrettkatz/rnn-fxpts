@@ -765,8 +765,8 @@ def show_tvb_results(test_data_ids=['dl50','dm10','dh5']):
     handles = []
     plt.figure(figsize=(9,4))
     for ym in dats:
-        y = [r[ym[0]] if r[ym[0]]>0 else -1 for r in results]
-        handles.append(scatter_with_errors(Ns, uNs, y, ym[1],ym[2],log=True))
+        y = [r[ym[0]] if r[ym[0]]>0 else 2**-1 for r in results]
+        handles.append(scatter_with_errors(Ns, uNs, y, ym[1],ym[2],log=True,logmin=2**-1))
         # y = [r[ym[0]] for r in results]
         # handles.append(scatter_with_errors(Ns, uNs, y, ym[1],ym[2]))
     handles.append(plt.plot(uNs, np.log2(uNs), 'dk--', ms=9)[0])
@@ -774,7 +774,7 @@ def show_tvb_results(test_data_ids=['dl50','dm10','dh5']):
     plt.legend(handles, ['$T\cup\,B$', '$T\cap\,B$', '$T-B$', '$B-T$', 'Known'], loc='upper left')
     # plt.ylim([-1,15])
     # plt.gca().set_yscale('log',basey=2)
-    plt.xlim([2**.5,2*uNs[-1]])
+    plt.xlim([2**.5,1.5*uNs[-1]])
     plt.gca().set_xscale('log',basex=2)
     plt.ylabel('# of fixed points')
     #plt.title('Traverse vs Baseline')
@@ -782,6 +782,7 @@ def show_tvb_results(test_data_ids=['dl50','dm10','dh5']):
     # ytick_labels = plt.gca().get_yticklabels()
     # plt.gca().set_yticklabels(['2^%s'%(yl.get_text()) for yl in ytick_labels])
     plt.yticks(range(-1,15,2),['0']+['$2^{%d}$'%yl for yl in range(1,15,2)])
+    plt.ylim([-2,15])
     plt.tight_layout()
     plt.show()
 
