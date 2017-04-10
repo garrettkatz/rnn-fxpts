@@ -530,12 +530,12 @@ def test_TvB(test_data_id, N, s, logfilename=os.devnull, save_result=False, save
     fxV_baseline = baseline_npz["fxV_unique"]
     fxV_traverse = traverse_npz["fxV_unique"]
     #### !!! simpler unique test
-    neighbors = lambda X, y: (np.fabs(X-y) < 2**-32).all(axis=0)
+    neighbors = lambda X, y: (np.fabs(X-y) < 2**-21).all(axis=0)
     fxV_baseline = rfx.get_unique_points_recursively(fxV_baseline, neighbors=neighbors)
     fxV_traverse = rfx.get_unique_points_recursively(fxV_traverse, neighbors=neighbors)
     # set trivials to true zero
-    fxV_baseline[:,np.fabs(fxV_baseline).max() < 2**-32] = 0
-    fxV_traverse[:,np.fabs(fxV_traverse).max() < 2**-32] = 0
+    fxV_baseline[:,np.fabs(fxV_baseline).max(axis=0) < 2**-21] = 0
+    fxV_traverse[:,np.fabs(fxV_traverse).max(axis=0) < 2**-21] = 0
 
     T = fxV_traverse.shape[1]
     B = fxV_baseline.shape[1]
@@ -572,15 +572,23 @@ def test_TvB(test_data_id, N, s, logfilename=os.devnull, save_result=False, save
     # distances around means
     baseline_mean = fxV_baseline.mean(axis=1)
     traverse_mean = fxV_traverse.mean(axis=1)
+    # L2
     baseline_dist = np.mean(np.sqrt(((fxV_baseline-baseline_mean[:,np.newaxis])**2).sum(axis=0)))
     traverse_dist = np.mean(np.sqrt(((fxV_traverse-traverse_mean[:,np.newaxis])**2).sum(axis=0)))
+    # # Linf
+    # baseline_dist = np.mean(np.fabs(fxV_baseline-baseline_mean[:,np.newaxis]).max(axis=0))
+    # traverse_dist = np.mean(np.fabs(fxV_traverse-traverse_mean[:,np.newaxis]).max(axis=0))
     results['baseline_dist'] = baseline_dist
     results['traverse_dist'] = traverse_dist
     if save_result: save_pkl_file('results/%s.pkl'%result_key, results)
 
     # vertex proximities:
+    # L2
     fxV_baseline_dist_v = np.sqrt(((fxV_baseline - np.sign(fxV_baseline))**2).sum(axis=0))
     fxV_traverse_dist_v = np.sqrt(((fxV_traverse - np.sign(fxV_traverse))**2).sum(axis=0))
+    # # Linf
+    # fxV_baseline_dist_v = np.fabs(fxV_baseline - np.sign(fxV_baseline)).max(axis=0)
+    # fxV_traverse_dist_v = np.fabs(fxV_traverse - np.sign(fxV_traverse)).max(axis=0)
     results['baseline_dist_v'] = fxV_baseline_dist_v.mean()
     results['traverse_dist_v'] = fxV_traverse_dist_v.mean()
     if save_result: save_pkl_file('results/%s.pkl'%result_key, results)
@@ -653,7 +661,7 @@ def test_TvB_stability(test_data_id, N, s, logfilename=os.devnull, save_result=F
     # traverse_npz = np.load('results/traverse_%s_N_%d_s_%d.npz'%(test_data_id, N, s))
     # fxV_baseline = baseline_npz["fxV_unique"]
     # fxV_traverse = traverse_npz["fxV_unique"]
-    npz = load_npz_file('TvB_%s_N_%d_s_%d'%(test_data_id, N, s))
+    npz = load_npz_file('results/TvB_%s_N_%d_s_%d.npz'%(test_data_id, N, s))
     fxVs = {'baseline':npz['fxV_baseline'],'traverse':npz['fxV_traverse']}
     W = npz['W']
 
@@ -661,8 +669,8 @@ def test_TvB_stability(test_data_id, N, s, logfilename=os.devnull, save_result=F
     results = {
         'result_key': result_key,
         'N':N,
-        'T':fxV_traverse.shape[1],
-        'B':fxV_baseline.shape[1],
+        'T':npz['fxV_traverse'].shape[1],
+        'B':npz['fxV_baseline'].shape[1],
     }
     npz = {}
     if save_result: save_pkl_file('results/%s.pkl'%result_key, results)
@@ -800,39 +808,51 @@ def show_tvb_dist_results(test_data_ids=['dl50','dm10','dh5']):
     Plot the results of traverse-baseline spatial distribution comparison on one or more testing data sets
     test_data_ids should be the list of ids, each as in generate_test_data (without file extension)
     """
-    results = []
-    for test_data_id in test_data_ids:
-        # results += load_pkl_file('results/tvb_dist_%s.pkl'%test_data_id)
-        results += load_pkl_file('results/tvb_%s.pkl'%test_data_id)
-    results = [r for r in results if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1024]]
     mpl.rcParams['mathtext.default'] = 'regular'
     # mpl.rcParams.update({'figure.autolayout': True})
     mpl.rcParams.update({'font.size': 12})
-    Ns = np.array([r['N'] for r in results])
-    uNs = np.unique(Ns)
-    handles = []
+    # results = []
     plt.figure(figsize=(8,3.5))
-    # handles.append(scatter_with_errors(Ns, uNs, np.array([r['mean_dist'] for r in results])))
-    handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist'] for r in results]), 'o','k',log=True,logmin=2**-5))
-    handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist'] for r in results]), 'o','none',log=True,logmin=2**-5))
-    # handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist_p'] for r in results]),'^'))
-    # handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist_p'] for r in results]),'v'))
-    # handles.append(scatter_with_errors(Ns, uNs, np.array([r['mean_dist_p'] for r in results]), 'd')) # accidental tuple
-    # plt.legend(handles, ['$||T - T_{mean}||$','$||B - B_{mean}||$','$||T^{+} - T^{+}_{mean}||$','$||B^{+} - B^{+}_{mean}||$','$||T^{+}_{mean} - B^{+}_{mean}||$'], loc='upper left')
-    handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist_v'] for r in results]),'^','k',log=True,logmin=2**-5))
-    handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist_v'] for r in results]),'^','none',log=True,logmin=2**-5))
-    plt.legend(handles, ['$||T - mean(T)||$','$||B - mean(B)||$','$||T - sign(T)||$','$||B - sign(B)||$'], loc='lower center')
-    # plt.xlim([uNs[0]-1,uNs[-1]+1])
-    plt.xlim([2**.5,2*uNs[-1]])
-    plt.gca().set_xscale('log',basex=2)
-    plt.ylim([-5,5])
-    plt.yticks(range(-5,5,2),['$2^{%d}$'%yl for yl in range(-5,5,2)])
-    plt.ylabel('Average distances')
-    #plt.title('Traverse vs Baseline')
-    # plt.draw()
-    # ytick_labels = plt.gca().get_yticklabels()
-    # plt.gca().set_yticklabels(['2^%s'%(yl.get_text()) for yl in ytick_labels])
-    # plt.yticks(range(-1,15,2),['0']+['$2^{%d}$'%yl for yl in range(1,15,2)])
+    sp = 0
+    for test_data_id in test_data_ids:
+        # results += load_pkl_file('results/tvb_dist_%s.pkl'%test_data_id)
+        # results += load_pkl_file('results/tvb_%s.pkl'%test_data_id)
+        results = load_pkl_file('results/tvb_%s.pkl'%test_data_id)
+        results = [r for r in results if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1024]]
+        Ns = np.array([r['N'] for r in results])
+        uNs = np.unique(Ns)
+        handles = []
+        log = False
+        logmin=2**-5
+        sp += 1
+        # plt.subplot(1,2,sp)
+        if sp==1:
+            plt.axes([.1, .2, .6, .7])
+        else:
+            plt.axes([.75, .2, .225, .7])
+        # handles.append(scatter_with_errors(Ns, uNs, np.array([r['mean_dist'] for r in results])))
+        handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist'] for r in results]), 'o','k',log=log,logmin=2**-5))
+        handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist'] for r in results]), 'o','none',log=log,logmin=2**-5))
+        # handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist_p'] for r in results]),'^'))
+        # handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist_p'] for r in results]),'v'))
+        # handles.append(scatter_with_errors(Ns, uNs, np.array([r['mean_dist_p'] for r in results]), 'd')) # accidental tuple
+        # plt.legend(handles, ['$||T - T_{mean}||$','$||B - B_{mean}||$','$||T^{+} - T^{+}_{mean}||$','$||B^{+} - B^{+}_{mean}||$','$||T^{+}_{mean} - B^{+}_{mean}||$'], loc='upper left')
+        handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist_v'] for r in results]),'^','k',log=log,logmin=2**-5))
+        handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist_v'] for r in results]),'^','none',log=log,logmin=2**-5))
+        if sp==1:
+            plt.legend(handles, ['$||T - mean(T)||$','$||B - mean(B)||$','$||T - sign(T)||$','$||B - sign(B)||$'], loc='upper left')
+        # plt.xlim([uNs[0]-1,uNs[-1]+1])
+        plt.xlim([2**(np.log2(uNs[0])-.5),2**(np.log2(uNs[-1])+.5)])
+        plt.xlabel('N')
+        plt.gca().set_xscale('log',basex=2)
+        # plt.ylim([-5,5])
+        # plt.yticks(range(-5,5,2),['$2^{%d}$'%yl for yl in range(-5,5,2)])
+        if sp==1: plt.ylabel('Average distances')
+        #plt.title('Traverse vs Baseline')
+        # plt.draw()
+        # ytick_labels = plt.gca().get_yticklabels()
+        # plt.gca().set_yticklabels(['2^%s'%(yl.get_text()) for yl in ytick_labels])
+        # plt.yticks(range(-1,15,2),['0']+['$2^{%d}$'%yl for yl in range(1,15,2)])
     # plt.tight_layout()
     plt.show()
 
@@ -986,28 +1006,38 @@ def show_tvb_work(test_data_ids):
     # mpl.rcParams.update({'figure.autolayout': True})
     mpl.rcParams.update({'font.size': 12})
 
-    t_res, b_res = [], []
+    t_res, b_res, res = [], [], []
     for test_data_id in test_data_ids:
         t_res += load_pkl_file('results/traverse_%s.pkl'%test_data_id)
         b_res += load_pkl_file('results/baseline_%s.pkl'%test_data_id)
+        res += load_pkl_file('results/tvb_%s.pkl'%test_data_id)
     t_res = [r for r in t_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1024]]
     b_res = [r for r in b_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1024]]
+    res = [r for r in res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1024]]
 
-    Ns = np.array([r['N'] for r in t_res])
+    for r in range(len(res)):
+        # result_key = 'TvB_%s_N_%d_s_%d'%(test_data_id, N, s)
+        result_key = res[r]['result_key'][4:]
+        for method_key in ['traverse','baseline']:
+            mres = load_pkl_file('results/%s_%s.pkl'%(method_key,result_key))
+            res[r][method_key+'_runtime'] = mres['runtime']
+            res[r][method_key+'_post_runtime'] = mres['post_runtime']
+
+    Ns = np.array([r['N'] for r in res])
     uNs = np.unique(Ns)
     handles = []
     plt.figure(figsize=(8,3))
     ylog = True
     if ylog:
-        handles.append(scatter_with_errors(Ns, uNs, [(r['runtime']+r['post_runtime'])/r['num_fxV_unique']/60 for r in b_res], 'o','none',log=True,logmin=2**-13))
-        handles.append(scatter_with_errors(Ns, uNs, [r['runtime']/r['num_fxV_unique']/60 for r in b_res], 'x','none',log=True,logmin=2**-13))
-        handles.append(scatter_with_errors(Ns, uNs, [r['runtime']/r['num_fxV_unique']/60 for r in t_res], '^','none',log=True,logmin=2**-13))
+        handles.append(scatter_with_errors(Ns, uNs, [(r['baseline_runtime']+r['baseline_post_runtime'])/r['B']/60 for r in res], 'o','none',log=True,logmin=2**-13))
+        handles.append(scatter_with_errors(Ns, uNs, [r['baseline_runtime']/r['B']/60 for r in res], 'x','none',log=True,logmin=2**-13))
+        handles.append(scatter_with_errors(Ns, uNs, [(r['traverse_runtime']+r['traverse_post_runtime'])/r['T']/60 for r in res], '^','none',log=True,logmin=2**-13))
         plt.yticks(range(-13,16,4),['$2^{%d}$'%yl for yl in range(-13,16,4)])
-        plt.ylim([-14,15])
+        plt.ylim([-14,13])
     else:
-        handles.append(scatter_with_errors(Ns, uNs, [(r['runtime']+r['post_runtime'])/r['num_fxV_unique']/60 for r in b_res], 'o','none'))
-        handles.append(scatter_with_errors(Ns, uNs, [r['runtime']/r['num_fxV_unique']/60 for r in b_res], 'x','none'))
-        handles.append(scatter_with_errors(Ns, uNs, [r['runtime']/r['num_fxV_unique']/60 for r in t_res], '^','none'))
+        handles.append(scatter_with_errors(Ns, uNs, [(r['baseline_runtime']+r['baseline_post_runtime'])/r['B']/60 for r in res], 'o','none'))
+        handles.append(scatter_with_errors(Ns, uNs, [r['baseline_runtime']/r['B']/60 for r in res], 'x','none'))
+        handles.append(scatter_with_errors(Ns, uNs, [(r['traverse_runtime']+r['traverse_post_runtime'])/r['T']/60 for r in res], '^','none'))
     plt.legend(handles, ['B with post-processing','B no post-processing','T with post-processing'], loc='upper left')
     # plt.xlim([uNs[0]-1,uNs[-1]+1])
     plt.xlim([2**.5,1.5*uNs[-1]])

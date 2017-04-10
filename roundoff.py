@@ -429,13 +429,21 @@ def show_simple_rd_all_fig(test_data_ids, Ns, samp_range):
                 bins = npz['bins']
             buckets += npz['traverse_buckets']
             buckets += npz['baseline_buckets']
+    plt.figure(figsize=(8,3))
     # plt.hist(buckets,bins=bins,log=log)
     if log:
         buckets[buckets > 0] = np.log2(buckets[buckets > 0])
     plt.bar(left=bins[:-1],height=buckets,width=bins[1:]-bins[:-1])
-    plt.ylabel('# of pairs')
-    plt.xlabel('Max Coordinate-wise Distance')
-    # xstep = 200
-    # plt.xticks(bins[::xstep],['$2^{%d}$'%xl for xl in bins[::xstep]])
-    # plt.xlim([bins[0]-1,bins[-1]+1])
+    plt.ylabel('# of fixed point pairs')
+    plt.xlabel('$max_i|v_i^{(1)}-v_i^{(2)}|$') #'Max Coordinate-wise Distance')
+    xmin_idx = int(((bins[:-1] > -1000) & (buckets > 0)).argmax())
+    xstep = int(np.ceil((bins[-1]-bins[xmin_idx])/10))
+    plt.xticks(bins[xmin_idx::xstep],['$2^{%d}$'%xl for xl in bins[xmin_idx::xstep]])
+    plt.xlim([bins[xmin_idx]-xstep,bins[-1]+xstep])
+    if log:
+        ymax = np.ceil(buckets.max())+1
+        ystep = np.ceil(ymax/5)
+        plt.yticks(np.arange(0,ymax+ystep,ystep),['$2^{%d}$'%yl for yl in np.arange(0,ymax+ystep,ystep)])
+        plt.ylim([0,ymax+1])
+    plt.tight_layout()
     plt.show()
