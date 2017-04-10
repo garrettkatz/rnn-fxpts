@@ -295,6 +295,7 @@ def get_simple_rd(test_data_id,N,samp,cap,logfilename=os.devnull):
         for j in range(fxV.shape[1]):
             logfile.write('disting %d of %d...\n'%(j,fxV.shape[1]))
             dists = np.fabs(fxV-fxV[:,[j]]).max(axis=0)
+            dists[dists == 0] = 2**bins[0]
             logdists = np.log2(dists)
             logdists[logdists < bins[0]] = bins[0]
             logdists[logdists > bins[-1]] = bins[-1]
