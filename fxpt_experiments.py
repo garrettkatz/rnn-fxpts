@@ -1030,26 +1030,28 @@ def show_tvb_work(test_data_ids):
     ylog = True
     if ylog:
         handles.append(scatter_with_errors(Ns, uNs, [(r['baseline_runtime']+r['baseline_post_runtime'])/r['B']/60 for r in res], 'o','none',log=True,logmin=2**-13))
-        handles.append(scatter_with_errors(Ns, uNs, [r['baseline_runtime']/r['B']/60 for r in res], 'x','none',log=True,logmin=2**-13))
+        # handles.append(scatter_with_errors(Ns, uNs, [r['baseline_runtime']/r['B']/60 for r in res], 'x','none',log=True,logmin=2**-13))
         handles.append(scatter_with_errors(Ns, uNs, [(r['traverse_runtime']+r['traverse_post_runtime'])/r['T']/60 for r in res], '^','none',log=True,logmin=2**-13))
         plt.yticks(range(-13,16,4),['$2^{%d}$'%yl for yl in range(-13,16,4)])
         plt.ylim([-14,13])
     else:
         handles.append(scatter_with_errors(Ns, uNs, [(r['baseline_runtime']+r['baseline_post_runtime'])/r['B']/60 for r in res], 'o','none'))
-        handles.append(scatter_with_errors(Ns, uNs, [r['baseline_runtime']/r['B']/60 for r in res], 'x','none'))
+        # handles.append(scatter_with_errors(Ns, uNs, [r['baseline_runtime']/r['B']/60 for r in res], 'x','none'))
         handles.append(scatter_with_errors(Ns, uNs, [(r['traverse_runtime']+r['traverse_post_runtime'])/r['T']/60 for r in res], '^','none'))
-    plt.legend(handles, ['B with post-processing','B no post-processing','T with post-processing'], loc='upper left')
+    # plt.legend(handles, ['B with post-processing','B no post-processing','T with post-processing'], loc='upper left')
+    plt.legend(handles, ['B','T'], loc='upper left')
     # plt.xlim([uNs[0]-1,uNs[-1]+1])
     plt.xlim([2**.5,1.5*uNs[-1]])
     plt.gca().set_xscale('log',basex=2)
     plt.ylabel('Minutes per fixed point found')
+    plt.xlabel('N')
     # plt.gca().set_yscale('log',basey=2)
     #plt.title('Traverse vs Baseline')
     # plt.draw()
     # ytick_labels = plt.gca().get_yticklabels()
     # plt.gca().set_yticklabels(['2^%s'%(yl.get_text()) for yl in ytick_labels])
     # plt.yticks(range(-1,15,2),['0']+['$2^{%d}$'%yl for yl in range(1,15,2)])
-    # plt.tight_layout()
+    plt.tight_layout()
     plt.show()
 
 def show_tvb_rawcounts(test_data_ids):
