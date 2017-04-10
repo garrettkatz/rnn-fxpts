@@ -778,7 +778,7 @@ def show_tvb_results(test_data_ids=['dl50','dm10','dh5']):
     mpl.rcParams.update({'font.size': 12})
     Ns = np.array([r['N'] for r in results])
     uNs = np.unique(Ns)
-    dats = [('T|B','v','k'),('T&B','^','none'),('T-B','s','none'),('B-T','o','k')]
+    dats = [('T|B','v','none'),('T&B','^','none'),('T-B','s','none'),('B-T','o','none')]
     handles = []
     plt.figure(figsize=(9,4))
     for ym in dats:

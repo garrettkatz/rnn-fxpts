@@ -433,7 +433,7 @@ def show_simple_rd_all_fig(test_data_ids, Ns, samp_range):
     # plt.hist(buckets,bins=bins,log=log)
     if log:
         buckets[buckets > 0] = np.log2(buckets[buckets > 0])
-    plt.bar(left=bins[:-1],height=buckets,width=bins[1:]-bins[:-1])
+    plt.bar(left=bins[:-1],height=buckets,width=bins[1:]-bins[:-1],facecolor='none')
     plt.ylabel('# of fixed point pairs')
     plt.xlabel('$max_i|v_i^{(1)}-v_i^{(2)}|$') #'Max Coordinate-wise Distance')
     xmin_idx = int(((bins[:-1] > -1000) & (buckets > 0)).argmax())
