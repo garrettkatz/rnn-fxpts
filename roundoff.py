@@ -270,6 +270,78 @@ def run_traverse_rd(test_data_id, Ns, num_procs):
         pool.join()
     print('total time: %f'%(time.time()-start_time))
 
+def get_simple_rd(test_data_id,N,samp,cap,logfilename=os.devnull):
+    """
+    Use simple unique test: if max absolute coordinate-wise difference < 2**-32
+    Compute and save distances between pairs of points found by both solvers.
+    Computes for the samp^{th} sample network of size N in test_data_id.
+    test_data_id should be as in fxpt_experiments.generate_test_data (without file extension).
+    Only pairs within a random subset of points of size cap are inspected.
+    Saves pair-wise distance distribution in histogram with one bucket per integer power of 2
+    logfilename is a file name at which progress updates are written.
+    """
+    logfile = open(logfilename,'w')
+    logfile.write('Running simple rd (%s,%d,%d)...\n'%(test_data_id,N,samp))
+    buckets = {}
+    bins = np.arange(-1025,3)
+    for method_key in ['traverse','baseline']:
+        npz = fe.load_npz_file('results/%s_%s_N_%d_s_%d.npz'%(method_key,test_data_id,N,samp))
+        fxV = npz['fxV_converged']
+        buckets[method_key] = np.zeros(len(bins)-1)
+        if cap is not None and fxV.shape[1] > cap:
+            logfile.write('capping...\n')
+            perm = np.random.permutation(fxV.shape[1])
+            fxV = fxV[:,perm[:cap]]
+        for j in range(fxV.shape[1]):
+            logfile.write('disting %d of %d...\n'%(j,fxV.shape[1]))
+            dists = np.fabs(fxV-fxV[:,[j]]).max(axis=0)
+            logdists = np.log2(dists)
+            logdists[logdists < bins[0]] = bins[0]
+            logdists[logdists > bins[-1]] = bins[-1]
+            hist,_ = np.histogram(logdists,bins=bins)
+            buckets[method_key] += hist
+    npz = {'bins':bins,'traverse_buckets':buckets['traverse'],'baseline_buckets':buckets['baseline']}    
+    fe.save_npz_file('results/simple_rd_%s_N_%d_s_%d.npz'%(test_data_id,N,samp), **npz)
+    logfile.write('Done.\n')
+    logfile.close()
+    print('Done %s %d %d'%(test_data_id,N,samp))
+
+def pool_get_simple_rd(args):
+    """
+    Wrapper function passed to multiprocessing.Pool
+    """
+    get_simple_rd(*args)
+
+def run_simple_rd(test_data_id, Ns, samp_range, num_procs):
+    """
+    Run get_traverse_rd on all networks in test_data_id whose size is in the list Ns.
+    Multiprocessing is used to run on multiple networks in parallel.
+    num_procs is the number of processors to use.
+    """
+
+    cpu_count = mp.cpu_count()
+    print('%d cpus, using %d'%(cpu_count, num_procs))
+
+    pool_args = []
+    # network_sizes, num_samples, _ = fe.load_test_data('%s.npz'%test_data_id)
+    # for (N,S) in zip(network_sizes, num_samples):
+        # if N not in Ns: continue
+    for N in Ns:
+        cap = 1000
+        for s in samp_range:
+            logfilename = 'logs/simple_rd_%s_N_%d_s_%d.log'%(test_data_id,N,s)
+            pool_args.append((test_data_id,N,s,cap,logfilename))
+    start_time = time.time()
+    test_fun = pool_get_simple_rd
+    if num_procs < 1: # don't multiprocess
+        for args in pool_args: test_fun(args)
+    else:
+        pool = mp.Pool(processes=num_procs)
+        pool.map(test_fun, pool_args)
+        pool.close()
+        pool.join()
+    print('total time: %f'%(time.time()-start_time))
+
 def show_traverse_rd_fig(test_data_ids, Ns, samp_range):
     """
     Plot relative distances from points found by fiber traversal.
@@ -339,3 +411,31 @@ def show_baseline_rd_fig(test_data_ids, Ns, samp_range):
             plt.xticks(range(-30,51,10),['']+['$2^{%d}$'%xl for xl in range(-20,51,10)])
     plt.show()
 
+def show_simple_rd_all_fig(test_data_ids, Ns, samp_range):
+    """
+    Plot relative distances from points found by fiber traversal.
+    test_ids, Ns, and samp_range should be as in show_traverse_re_fig.
+    """
+    log = True
+    mpl.rcParams['mathtext.default'] = 'regular'
+    buckets = None
+    bins = None
+    for samp in samp_range:
+        for (test_data_id,N) in zip(test_data_ids, Ns):
+            print('samp %d, N %d'%(samp,N))
+            npz = np.load('results/simple_rd_%s_N_%d_s_%d.npz'%(test_data_id,N,samp))
+            if buckets is None:
+                buckets = np.zeros(npz['traverse_buckets'].shape)
+                bins = npz['bins']
+            buckets += npz['traverse_buckets']
+            buckets += npz['baseline_buckets']
+    # plt.hist(buckets,bins=bins,log=log)
+    if log:
+        buckets[buckets > 0] = np.log2(buckets[buckets > 0])
+    plt.bar(left=bins[:-1],height=buckets,width=bins[1:]-bins[:-1])
+    plt.ylabel('# of pairs')
+    plt.xlabel('Max Coordinate-wise Distance')
+    # xstep = 200
+    # plt.xticks(bins[::xstep],['$2^{%d}$'%xl for xl in bins[::xstep]])
+    # plt.xlim([bins[0]-1,bins[-1]+1])
+    plt.show()

@@ -529,10 +529,13 @@ def test_TvB(test_data_id, N, s, logfilename=os.devnull, save_result=False, save
     traverse_npz = np.load('results/traverse_%s_N_%d_s_%d.npz'%(test_data_id, N, s))
     fxV_baseline = baseline_npz["fxV_unique"]
     fxV_traverse = traverse_npz["fxV_unique"]
-    #### !!! temp simple unique test
-    neighbors = lambda X, y: (np.fabs(X-y) < 10**-10).all(axis=0)
+    #### !!! simpler unique test
+    neighbors = lambda X, y: (np.fabs(X-y) < 2**-32).all(axis=0)
     fxV_baseline = rfx.get_unique_points_recursively(fxV_baseline, neighbors=neighbors)
     fxV_traverse = rfx.get_unique_points_recursively(fxV_traverse, neighbors=neighbors)
+    # set trivials to true zero
+    fxV_baseline[:,np.fabs(fxV_baseline).max() < 2**-32] = 0
+    fxV_traverse[:,np.fabs(fxV_traverse).max() < 2**-32] = 0
 
     T = fxV_traverse.shape[1]
     B = fxV_baseline.shape[1]
@@ -646,12 +649,13 @@ def test_TvB_stability(test_data_id, N, s, logfilename=os.devnull, save_result=F
     rfx.hardwrite(logfile,'Loading results...\n')
     # _,_,test_data = load_test_data('%s.npz'%test_data_id)
     # W = test_data['N_%d_W_%d'%(N,s)]
-    baseline_npz = np.load('results/baseline_%s_N_%d_s_%d.npz'%(test_data_id, N, s))
-    traverse_npz = np.load('results/traverse_%s_N_%d_s_%d.npz'%(test_data_id, N, s))
-    fxV_baseline = baseline_npz["fxV_unique"]
-    fxV_traverse = traverse_npz["fxV_unique"]
-    fxVs = {'baseline':fxV_baseline,'traverse':fxV_traverse}
-    W = traverse_npz['W']
+    # baseline_npz = np.load('results/baseline_%s_N_%d_s_%d.npz'%(test_data_id, N, s))
+    # traverse_npz = np.load('results/traverse_%s_N_%d_s_%d.npz'%(test_data_id, N, s))
+    # fxV_baseline = baseline_npz["fxV_unique"]
+    # fxV_traverse = traverse_npz["fxV_unique"]
+    npz = load_npz_file('TvB_%s_N_%d_s_%d'%(test_data_id, N, s))
+    fxVs = {'baseline':npz['fxV_baseline'],'traverse':npz['fxV_traverse']}
+    W = npz['W']
 
     result_key = 'TvB_stable_%s_N_%d_s_%d'%(test_data_id, N, s)
     results = {
