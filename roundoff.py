@@ -312,7 +312,7 @@ def pool_get_simple_rd(args):
     """
     get_simple_rd(*args)
 
-def run_simple_rd(test_data_id, Ns, samp_range, num_procs):
+def run_simple_rd(test_data_id, Ns, num_procs):
     """
     Run get_traverse_rd on all networks in test_data_id whose size is in the list Ns.
     Multiprocessing is used to run on multiple networks in parallel.
@@ -323,12 +323,11 @@ def run_simple_rd(test_data_id, Ns, samp_range, num_procs):
     print('%d cpus, using %d'%(cpu_count, num_procs))
 
     pool_args = []
-    # network_sizes, num_samples, _ = fe.load_test_data('%s.npz'%test_data_id)
-    # for (N,S) in zip(network_sizes, num_samples):
-        # if N not in Ns: continue
-    for N in Ns:
+    network_sizes, num_samples, _ = fe.load_test_data('%s.npz'%test_data_id)
+    for (N,S) in zip(network_sizes, num_samples):
+        if N not in Ns: continue
         cap = 1000
-        for s in samp_range:
+        for s in range(S):
             logfilename = 'logs/simple_rd_%s_N_%d_s_%d.log'%(test_data_id,N,s)
             pool_args.append((test_data_id,N,s,cap,logfilename))
     start_time = time.time()
