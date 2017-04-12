@@ -64,10 +64,10 @@ if scale_option == 'big':
     max_fxpts = 32
 if scale_option == 'big256':
     network_sizes = [256]
-    num_samples = [3]
+    num_samples = [5]
     _ = fe.generate_test_data(network_sizes, num_samples, test_data_id='big256_base.npz',refine_cap=200)
-    max_traverse_steps = 2**14
-    max_fxpts = 10
+    max_traverse_steps = 2**20
+    max_fxpts = None
 if scale_option == 'big512':
     network_sizes = [512]
     num_samples = [3]
