@@ -84,7 +84,7 @@ for dirname in ['results/','logs/']:
 
 # Comparison with baseline
 test_data_id = '%s_base'%scale_option
-_ = fe.run_traverse_experiments(test_data_id,num_procs,max_traverse_steps,max_fxpts)
+# _ = fe.run_traverse_experiments(test_data_id,num_procs,max_traverse_steps,max_fxpts)
 _ = fe.run_baseline_experiments(test_data_id,num_procs)
 _ = fe.run_TvB_experiments(test_data_id,num_procs)
 _ = fe.run_TvB_stability_experiments(test_data_id,num_procs)
