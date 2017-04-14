@@ -65,15 +65,15 @@ if scale_option == 'big':
 if scale_option == 'big256':
     network_sizes = [256]
     num_samples = [5]
-    _ = fe.generate_test_data(network_sizes, num_samples, test_data_id='big256_base.npz',refine_cap=200)
+    _ = fe.generate_test_data(network_sizes, num_samples, test_data_id='%s_base.npz'%scale_option,refine_cap=200)
     max_traverse_steps = 2**20
     max_fxpts = None
 if scale_option == 'big512':
     network_sizes = [512]
-    num_samples = [3]
-    _ = fe.generate_test_data(network_sizes, num_samples, test_data_id='big512_base.npz',refine_cap=200)
-    max_traverse_steps = 2**14
-    max_fxpts = 10
+    num_samples = [5]
+    _ = fe.generate_test_data(network_sizes, num_samples, test_data_id='%s_base.npz'%scale_option,refine_cap=200)
+    max_traverse_steps = 2**17
+    max_fxpts = None
 
 print('Made test data.')
 
@@ -84,7 +84,7 @@ for dirname in ['results/','logs/']:
 
 # Comparison with baseline
 test_data_id = '%s_base'%scale_option
-# _ = fe.run_traverse_experiments(test_data_id,num_procs,max_traverse_steps,max_fxpts)
+_ = fe.run_traverse_experiments(test_data_id,num_procs,max_traverse_steps,max_fxpts)
 _ = fe.run_baseline_experiments(test_data_id,num_procs)
 _ = fe.run_TvB_experiments(test_data_id,num_procs)
 _ = fe.run_TvB_stability_experiments(test_data_id,num_procs)
