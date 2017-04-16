@@ -281,7 +281,7 @@ def get_simple_rd(test_data_id,N,samp,cap,logfilename=os.devnull):
     logfilename is a file name at which progress updates are written.
     """
     logfile = open(logfilename,'w')
-    logfile.write('Running simple rd (%s,%d,%d)...\n'%(test_data_id,N,samp))
+    rfx.hardwrite(logfile,'Running simple rd (%s,%d,%d)...\n'%(test_data_id,N,samp))
     buckets = {}
     bins = np.arange(-1025,3)
     for method_key in ['traverse','baseline']:
@@ -289,11 +289,11 @@ def get_simple_rd(test_data_id,N,samp,cap,logfilename=os.devnull):
         fxV = npz['fxV_converged']
         buckets[method_key] = np.zeros(len(bins)-1)
         if cap is not None and fxV.shape[1] > cap:
-            logfile.write('capping...\n')
+            rfx.hardwrite(logfile,'capping...\n')
             perm = np.random.permutation(fxV.shape[1])
             fxV = fxV[:,perm[:cap]]
         for j in range(fxV.shape[1]):
-            logfile.write('disting %d of %d...\n'%(j,fxV.shape[1]))
+            rfx.hardwrite(logfile,'disting %d of %d...\n'%(j,fxV.shape[1]))
             dists = np.fabs(fxV-fxV[:,[j]]).max(axis=0)
             dists[dists == 0] = 2.0**bins[0]
             logdists = np.log2(dists)
@@ -303,7 +303,7 @@ def get_simple_rd(test_data_id,N,samp,cap,logfilename=os.devnull):
             buckets[method_key] += hist
     npz = {'bins':bins,'traverse_buckets':buckets['traverse'],'baseline_buckets':buckets['baseline']}    
     fe.save_npz_file('results/simple_rd_%s_N_%d_s_%d.npz'%(test_data_id,N,samp), **npz)
-    logfile.write('Done.\n')
+    rfx.hardwrite(logfile,'Done.\n')
     logfile.close()
     print('Done %s %d %d'%(test_data_id,N,samp))
 
@@ -315,7 +315,7 @@ def pool_get_simple_rd(args):
 
 def run_simple_rd(test_data_id, Ns, num_procs):
     """
-    Run get_traverse_rd on all networks in test_data_id whose size is in the list Ns.
+    Run get_simple_rd on all networks in test_data_id whose size is in the list Ns.
     Multiprocessing is used to run on multiple networks in parallel.
     num_procs is the number of processors to use.
     """
@@ -413,7 +413,7 @@ def show_baseline_rd_fig(test_data_ids, Ns, samp_range):
 
 def show_simple_rd_all_fig(test_data_ids, Ns, samp_range):
     """
-    Plot relative distances from points found by fiber traversal.
+    Plot relative distances from points found by fiber traversal or baseline.
     test_ids, Ns, and samp_range should be as in show_traverse_re_fig.
     """
     log = True

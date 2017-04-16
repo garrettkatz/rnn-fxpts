@@ -828,7 +828,8 @@ def show_tvb_dist_results(test_data_ids=['dl50','dm10','dh5']):
         # plt.subplot(1,2,sp)
         if sp==1:
             plt.axes([.1, .2, .6, .7])
-        else:
+        # else:
+        if sp==2:
             plt.axes([.75, .2, .225, .7])
         # handles.append(scatter_with_errors(Ns, uNs, np.array([r['mean_dist'] for r in results])))
         handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist'] for r in results]), 'o','k',log=log,logmin=2**-5))
@@ -842,7 +843,11 @@ def show_tvb_dist_results(test_data_ids=['dl50','dm10','dh5']):
         if sp==1:
             plt.legend(handles, ['$||T - mean(T)||$','$||B - mean(B)||$','$||T - sign(T)||$','$||B - sign(B)||$'], loc='upper left')
         # plt.xlim([uNs[0]-1,uNs[-1]+1])
-        plt.xlim([2**(np.log2(uNs[0])-.5),2**(np.log2(uNs[-1])+.5)])
+        # plt.xlim([2**(np.log2(uNs[0])-.5),2**(np.log2(uNs[-1])+.5)])
+        if sp==1:
+            plt.xlim([2**(np.log2(2)-.5),2**(np.log2(128)+.5)])
+        if sp==2:
+            plt.xlim([2**(np.log2(256)-.5),2**(np.log2(512)+.5)])
         plt.xlabel('N')
         plt.gca().set_xscale('log',basex=2)
         # plt.ylim([-5,5])
