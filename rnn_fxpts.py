@@ -408,7 +408,7 @@ def calc_z_new(J, z):
     z_new = z_new / np.sqrt((z_new**2).sum()) # faster than linalg.norm
     return z_new
 
-def traverse(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_traverse_steps=None, max_fxpts=None, logfile=None):
+def traverse(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_traverse_steps=None, max_fxpts=None, logfile=None, max_step_size=None):
     """
     Find fixed points via fiber traversal.
     run_solver invokes this method before post-processing the resulting fixed points.
@@ -484,6 +484,7 @@ def traverse(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_traverse_
 
         # Get step size
         step_size, rho, s_min = traverse_step_size(_W_, _Winv_, D, J, va, c, z_new)
+        if max_step_size is not None: step_size = min(step_size, max_step_size)
         step_sizes.append(step_size)
         s_mins.append(s_min)
 
@@ -692,7 +693,7 @@ def refine_fxpts_capped(W, V, max_iters=2**5, cap=10000):
     # refines = [refine_fxpts(W,V_,max_iters=max_iters) for V_ in Vs]
     refines = []
     for i in range(len(Vs)):
-        print('%d of %d'%(i,len(Vs)))
+        # print('%d of %d'%(i,len(Vs)))
         refines.append(refine_fxpts(W,Vs[i],max_iters=max_iters))
     V = np.concatenate([r[0] for r in refines],axis=1)
     converged = np.concatenate([r[1] for r in refines])
@@ -782,7 +783,7 @@ def baseline_solver(W, timeout=60, max_fxpts=None, max_traj_steps=10, logfile=No
     fxV = np.concatenate(fxV,axis=1)
     return fxV, num_reps
 
-def post_process_fxpts(W, fxV, logfile=None, refine_cap=10000, Winv=None):
+def post_process_fxpts(W, fxV, logfile=None, refine_cap=10000, Winv=None, neighbors=None):
     """
     Post-process a set of candidate fixed points:
       1. Refines the approximate point locations via Newton-Raphson
@@ -795,6 +796,7 @@ def post_process_fxpts(W, fxV, logfile=None, refine_cap=10000, Winv=None):
       if None, no progress is recorded
     refine_cap is the maximum number of candidates refined at a time
     Winv should be the inverse of W, unless None, in which case it is computed
+    neighbors should be a neighbor function as in identical_fixed_points
     returns fxV_unique, fxV, where
       fxV_unique[:,p] is the p^{th} refined, unique fixed point found
       fxV[:,q] is the q^{th} refined (potentially duplicate) fixed point found
@@ -806,7 +808,8 @@ def post_process_fxpts(W, fxV, logfile=None, refine_cap=10000, Winv=None):
     N = W.shape[0]
     fxV = np.concatenate((-fxV, np.zeros((N,1)), fxV),axis=1)
     if logfile is not None: hardwrite(logfile,'Uniqueing fxpts...\n')
-    neighbors = lambda X, y: identical_fixed_points(W, X, y, Winv)[0]
+    if neighbors is None:
+        neighbors = lambda X, y: identical_fixed_points(W, X, y, Winv)[0]
     fxV_unique = get_unique_points_recursively(fxV, neighbors=neighbors)
     return fxV_unique, fxV
 
