@@ -131,9 +131,9 @@ def delta_fig():
     plt.text(-.4,.985,'$\\varepsilon$')
     plt.text(-.375,-.075,'$\\delta_i$')
     mpl.rcParams.update({'font.size': 12})
-    plt.ylabel("$\\sigma'(x)$",rotation=0)
+    plt.ylabel("$\\sigma'(\\tilde{W}_ix)$",rotation=90,fontsize=16)
     plt.ylim([-.15,1.15])
-    plt.xlabel('x')
+    plt.xlabel('$\\tilde{W}_ix$',fontsize=16)
     # plt.ylabel("$d\sigma/dx$",rotation=0)
     plt.show()
 
@@ -160,9 +160,9 @@ def mu_fig():
     plt.text(2-.1,-.125,'$\\Delta_i$')
     plt.text(.5-.1,-.125,'$\\Delta_i$')
     mpl.rcParams.update({'font.size': 12})
-    plt.ylabel("$\\sigma''(x)$",rotation=0)
+    plt.ylabel("$\\sigma''(\\tilde{W}_ix)$",fontsize=16)
     plt.ylim([-1,1])
-    plt.xlabel('x')
+    plt.xlabel('$\\tilde{W}_ix$',fontsize=16)
     # plt.ylabel("$d\sigma/dx$",rotation=0)
     plt.show()
 

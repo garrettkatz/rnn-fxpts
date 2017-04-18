@@ -811,14 +811,17 @@ def show_tvb_dist_results(test_data_ids=['dl50','dm10','dh5']):
     mpl.rcParams['mathtext.default'] = 'regular'
     # mpl.rcParams.update({'figure.autolayout': True})
     mpl.rcParams.update({'font.size': 12})
-    # results = []
+    results = []
     plt.figure(figsize=(8,3.5))
     sp = 0
     for test_data_id in test_data_ids:
         # results += load_pkl_file('results/tvb_dist_%s.pkl'%test_data_id)
-        # results += load_pkl_file('results/tvb_%s.pkl'%test_data_id)
-        results = load_pkl_file('results/tvb_%s.pkl'%test_data_id)
-        results = [r for r in results if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1024]]
+        results += load_pkl_file('results/tvb_%s.pkl'%test_data_id)
+        # results = load_pkl_file('results/tvb_%s.pkl'%test_data_id)
+    results = [r for r in results if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1024]]
+    N_cut = 128
+    split_results = [[r for r in results if r['N'] <= N_cut], [r for r in results if r['N'] > N_cut]]
+    for results in split_results:
         Ns = np.array([r['N'] for r in results])
         uNs = np.unique(Ns)
         handles = []
@@ -843,11 +846,11 @@ def show_tvb_dist_results(test_data_ids=['dl50','dm10','dh5']):
         if sp==1:
             plt.legend(handles, ['$||T - mean(T)||$','$||B - mean(B)||$','$||T - sign(T)||$','$||B - sign(B)||$'], loc='upper left')
         # plt.xlim([uNs[0]-1,uNs[-1]+1])
-        # plt.xlim([2**(np.log2(uNs[0])-.5),2**(np.log2(uNs[-1])+.5)])
-        if sp==1:
-            plt.xlim([2**(np.log2(2)-.5),2**(np.log2(128)+.5)])
-        if sp==2:
-            plt.xlim([2**(np.log2(256)-.5),2**(np.log2(512)+.5)])
+        plt.xlim([2**(np.log2(uNs[0])-.5),2**(np.log2(uNs[-1])+.5)])
+        # if sp==1:
+        #     plt.xlim([2**(np.log2(2)-.5),2**(np.log2(128)+.5)])
+        # if sp==2:
+        #     plt.xlim([2**(np.log2(256)-.5),2**(np.log2(512)+.5)])
         plt.xlabel('N')
         plt.gca().set_xscale('log',basex=2)
         # plt.ylim([-5,5])
@@ -1032,7 +1035,7 @@ def show_tvb_work(test_data_ids):
     uNs = np.unique(Ns)
     handles = []
     plt.figure(figsize=(8,3))
-    ylog = True
+    ylog = False
     if ylog:
         handles.append(scatter_with_errors(Ns, uNs, [(r['baseline_runtime']+r['baseline_post_runtime'])/r['B']/60 for r in res], 'o','none',log=True,logmin=2**-13))
         # handles.append(scatter_with_errors(Ns, uNs, [r['baseline_runtime']/r['B']/60 for r in res], 'x','none',log=True,logmin=2**-13))
@@ -1058,6 +1061,7 @@ def show_tvb_work(test_data_ids):
     # plt.yticks(range(-1,15,2),['0']+['$2^{%d}$'%yl for yl in range(1,15,2)])
     plt.tight_layout()
     plt.show()
+    return res
 
 def show_tvb_rawcounts(test_data_ids):
     """

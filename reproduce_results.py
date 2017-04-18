@@ -14,7 +14,7 @@ num_procs = int(raw_input('Please enter # of cpus to use: '))
 if num_procs not in range(num_cpus+1):
     print('Invalid choice... terminating.')
     sys.exit()
-scale_options = ['micro','mini','full','big256','big512','big']
+scale_options = ['micro','mini','full','big256','big512','big1024','big']
 scale_option = raw_input('Please enter scale option ("' + ('", "').join(scale_options) + '"): ')
 if scale_option not in scale_options:
     print('Invalid choice... terminating.')
@@ -73,6 +73,12 @@ if scale_option == 'big512':
     num_samples = [5]
     _ = fe.generate_test_data(network_sizes, num_samples, test_data_id='%s_base.npz'%scale_option,refine_cap=200)
     max_traverse_steps = 2**17
+    max_fxpts = None
+if scale_option == 'big1024':
+    network_sizes = [1024]
+    num_samples = [5]
+    _ = fe.generate_test_data(network_sizes, num_samples, test_data_id='%s_base.npz'%scale_option,refine_cap=200)
+    max_traverse_steps = 2**15
     max_fxpts = None
 
 print('Made test data.')
