@@ -822,6 +822,7 @@ def show_tvb_dist_results(test_data_ids=['dl50','dm10','dh5']):
     N_cut = 128
     split_results = [[r for r in results if r['N'] <= N_cut], [r for r in results if r['N'] > N_cut]]
     for results in split_results:
+        if len(results)==0: continue
         Ns = np.array([r['N'] for r in results])
         uNs = np.unique(Ns)
         handles = []
@@ -1035,7 +1036,7 @@ def show_tvb_work(test_data_ids):
     uNs = np.unique(Ns)
     handles = []
     plt.figure(figsize=(8,3))
-    ylog = False
+    ylog = True
     if ylog:
         handles.append(scatter_with_errors(Ns, uNs, [(r['baseline_runtime']+r['baseline_post_runtime'])/r['B']/60 for r in res], 'o','none',log=True,logmin=2**-13))
         # handles.append(scatter_with_errors(Ns, uNs, [r['baseline_runtime']/r['B']/60 for r in res], 'x','none',log=True,logmin=2**-13))
