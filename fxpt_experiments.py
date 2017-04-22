@@ -812,7 +812,7 @@ def show_tvb_dist_results(test_data_ids=['dl50','dm10','dh5']):
     # mpl.rcParams.update({'figure.autolayout': True})
     mpl.rcParams.update({'font.size': 12})
     results = []
-    plt.figure(figsize=(8,3.5))
+    plt.figure(figsize=(8,2.65))
     sp = 0
     for test_data_id in test_data_ids:
         # results += load_pkl_file('results/tvb_dist_%s.pkl'%test_data_id)
@@ -845,7 +845,7 @@ def show_tvb_dist_results(test_data_ids=['dl50','dm10','dh5']):
         handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist_v'] for r in results]),'^','k',log=log,logmin=2**-5))
         handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist_v'] for r in results]),'^','none',log=log,logmin=2**-5))
         if sp==1:
-            plt.legend(handles, ['$||T - mean(T)||$','$||B - mean(B)||$','$||T - sign(T)||$','$||B - sign(B)||$'], loc='upper left')
+            plt.legend(handles, ['$||T - mean(T)||$','$||B - mean(B)||$','$||T - sign(T)||$','$||B - sign(B)||$'], loc='upper left',fontsize=12)
         # plt.xlim([uNs[0]-1,uNs[-1]+1])
         plt.xlim([2**(np.log2(uNs[0])-.5),2**(np.log2(uNs[-1])+.5)])
         # if sp==1:
@@ -883,7 +883,7 @@ def show_tvb_stab_result(test_data_id='full_base', N=24, s=0):
     # npz['max_eigs_%s'%method_key] = max_eigs[method_key]
     plt.scatter(npz['norms_baseline'][b_idx],npz['max_eigs_baseline'][b_idx],c='',marker='o',s=ms)
     plt.scatter(npz['norms_traverse'][t_idx],npz['max_eigs_traverse'][t_idx],c='k',marker='+',s=ms)
-    plt.legend(['B','T'],loc='upper left')
+    plt.legend(['B','T'],loc='upper left',fontsize=16)
     norm_max = max(npz['norms_baseline'].max(),npz['norms_traverse'].max())
     plt.xlim([-.1*norm_max,1.1*norm_max])
     # plt.ylim([-1,15])
@@ -906,7 +906,7 @@ def show_tvb_stab_result(test_data_id='full_base', N=24, s=0):
     plt.hist([npz['norms_baseline'][bs],npz['norms_traverse'][ts],npz['norms_baseline'][~bs],npz['norms_traverse'][~ts]],color=np.array([[0.0,0.33,0.66,1.0]]).T*np.ones((1,3)),bins=range(int(np.ceil(norm_max+1))),align='mid')
     # plt.hist([npz['norms_baseline'][bs],npz['norms_traverse'][ts],npz['norms_baseline'][~bs],npz['norms_traverse'][~ts]],bins=range(int(np.ceil(norm_max+1))),align='mid')
     plt.xlim([0,np.ceil(norm_max)])
-    plt.legend(['B st','T st','B un','T un'],loc='upper left')
+    plt.legend(['B st','T st','B un','T un'],loc='upper left',fontsize=16)
     plt.xlabel('Norm')
     plt.ylabel('# of fixed points')
     plt.gca().set_yscale('log',basey=2)
@@ -941,7 +941,7 @@ def show_tvb_stab_results(test_data_ids):
     Ns = np.array([r['N'] for r in results])
     uNs = np.unique(Ns)
     handles = []
-    plt.figure(figsize=(8,3.5))
+    plt.figure(figsize=(8,3))
     # handles.append(scatter_with_errors(Ns, uNs, np.array([r['mean_dist'] for r in results])))
     handles.append(scatter_with_errors(Ns, uNs, [max(r['num_stable_traverse'],0.5) for r in results], 'o','none',log=True,logmin=0.5))
     handles.append(scatter_with_errors(Ns, uNs, [max(r['num_stable_baseline'],0.5) for r in results], 'd','none',log=True,logmin=0.5))
@@ -954,7 +954,7 @@ def show_tvb_stab_results(test_data_ids):
     # handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist_v'] for r in results]),'^','k'))
     # handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist_v'] for r in results]),'^','none'))
     # plt.legend(handles, ['Traverse','Baseline'], loc='upper left')
-    plt.legend(handles, ['T st','B st','T un','B un'], loc='upper left')
+    plt.legend(handles, ['T st','B st','T un','B un'], loc='upper left',fontsize=12)
     plt.xlim([2**.5,2**.5*uNs[-1]])
     # plt.ylim([-1,25])
     plt.ylabel('# of fixed points')
@@ -1064,6 +1064,84 @@ def show_tvb_work(test_data_ids):
     plt.show()
     return res
 
+def show_tvb_work_split(test_data_ids):
+    """
+    Plot the results of traverse-baseline work complexity comparison on one or more testing data sets
+    test_data_ids should be the list of ids, each as in generate_test_data (without file extension)
+    """
+    mpl.rcParams['mathtext.default'] = 'regular'
+    # mpl.rcParams.update({'figure.autolayout': True})
+    mpl.rcParams.update({'font.size': 12})
+
+    t_res, b_res, results = [], [], []
+    for test_data_id in test_data_ids:
+        t_res += load_pkl_file('results/traverse_%s.pkl'%test_data_id)
+        b_res += load_pkl_file('results/baseline_%s.pkl'%test_data_id)
+        results += load_pkl_file('results/tvb_%s.pkl'%test_data_id)
+    t_res = [r for r in t_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1024]]
+    b_res = [r for r in b_res if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1024]]
+    results = [r for r in results if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1024]]
+
+    for r in range(len(results)):
+        # result_key = 'TvB_%s_N_%d_s_%d'%(test_data_id, N, s)
+        result_key = results[r]['result_key'][4:]
+        for method_key in ['traverse','baseline']:
+            mres = load_pkl_file('results/%s_%s.pkl'%(method_key,result_key))
+            results[r][method_key+'_runtime'] = mres['runtime']
+            results[r][method_key+'_post_runtime'] = mres['post_runtime']
+
+    N_cut = 128
+    split_results = [[r for r in results if r['N'] <= N_cut], [r for r in results if r['N'] > N_cut]]
+    plt.figure(figsize=(8,2.75))
+    sp = 0
+    for res in split_results:
+        sp += 1
+        # plt.subplot(1,2,sp)
+        if sp==1:
+            plt.axes([.1, .2, .6, .7])
+        # else:
+        if sp==2:
+            plt.axes([.75, .2, .225, .7])
+        Ns = np.array([r['N'] for r in res])
+        uNs = np.unique(Ns)
+        handles = []
+        if sp == 1: ylog = True
+        if sp == 2: ylog = True
+        if ylog:
+            if sp == 1: logmin = 2**-13
+            else: logmin = 2**0
+            handles.append(scatter_with_errors(Ns, uNs, [(r['baseline_runtime']+r['baseline_post_runtime'])/r['B']/60 for r in res], 'o','none',log=True,logmin=logmin))
+            # handles.append(scatter_with_errors(Ns, uNs, [r['baseline_runtime']/r['B']/60 for r in res], 'x','none',log=True,logmin=logmin))
+            handles.append(scatter_with_errors(Ns, uNs, [(r['traverse_runtime']+r['traverse_post_runtime'])/r['T']/60 for r in res], '^','none',log=True,logmin=logmin))
+            if sp == 1:
+                plt.yticks(range(-13,16,4),['$2^{%d}$'%yl for yl in range(-13,16,4)])
+                plt.ylim([-14,7])
+            else:
+                pass
+                plt.yticks(range(0,15,2),['$2^{%d}$'%yl for yl in range(0,15,2)])
+                plt.ylim([-1,14])
+        else:
+            handles.append(scatter_with_errors(Ns, uNs, [(r['baseline_runtime']+r['baseline_post_runtime'])/r['B']/60 for r in res], 'o','none'))
+            # handles.append(scatter_with_errors(Ns, uNs, [r['baseline_runtime']/r['B']/60 for r in res], 'x','none'))
+            handles.append(scatter_with_errors(Ns, uNs, [(r['traverse_runtime']+r['traverse_post_runtime'])/r['T']/60 for r in res], '^','none'))
+        # plt.legend(handles, ['B with post-processing','B no post-processing','T with post-processing'], loc='upper left')
+        if sp == 1: plt.legend(handles, ['B','T'], loc='upper left')
+        # plt.xlim([uNs[0]-1,uNs[-1]+1])
+        # plt.xlim([2**.5,1.5*uNs[-1]])
+        plt.xlim([2**(np.log2(uNs[0])-.5),2**(np.log2(uNs[-1])+.5)])
+        plt.gca().set_xscale('log',basex=2)
+        if sp == 1: plt.ylabel('Minutes per fixed point found')
+        plt.xlabel('N')
+        # plt.gca().set_yscale('log',basey=2)
+        #plt.title('Traverse vs Baseline')
+        # plt.draw()
+        # ytick_labels = plt.gca().get_yticklabels()
+        # plt.gca().set_yticklabels(['2^%s'%(yl.get_text()) for yl in ytick_labels])
+        # plt.yticks(range(-1,15,2),['0']+['$2^{%d}$'%yl for yl in range(1,15,2)])
+        # plt.tight_layout()
+    plt.show()
+    return results
+
 def show_tvb_rawcounts(test_data_ids):
     """
     Plot the results of traverse-baseline un-post-processed count comparison on one or more testing data sets
@@ -1111,14 +1189,14 @@ def show_Wc_results(test_data_id='full_choose'):
     Ns = np.array([r[0]['N'] for r in results])
     uNs = np.unique(Ns)
     handles = []
-    plt.figure(figsize=(8,4.2))
+    plt.figure(figsize=(8,3.75))
     y = [max(r[0]['num_fxV_union'],0.5) for r in results]
     handles.append(scatter_with_errors(Ns, uNs, y, 'o','k',log=True,logmin=.5))
     for (fun, m,fc) in [(np.max,'^','none'),(np.mean,'d','k',),(np.min,'v','none')]:
         y = [max(fun([r['num_fxV_unique'] for r in res]),0.5) for res in results]
         handles.append(scatter_with_errors(Ns, uNs, y,m,fc,log=True,logmin=0.5))
     handles.append(plt.plot(uNs, np.log2(uNs), 'dk--')[0])
-    plt.legend(handles, ['Union','Max','Mean','Min','Known'], loc='upper left')
+    plt.legend(handles, ['Union','Max','Mean','Min','Known'], loc='upper left',fontsize=13)
     plt.xlim([uNs[0]-.5,uNs[-1]+.5])
     plt.ylabel('# of fixed points')
     #plt.title('Different Regular Regions')
@@ -1126,7 +1204,7 @@ def show_Wc_results(test_data_id='full_choose'):
     # ytick_labels = plt.gca().get_yticklabels()
     # plt.gca().set_yticklabels(['2^%s'%(yl.get_text()) for yl in ytick_labels])
     plt.yticks(range(0,11,1),['$2^{%d}$'%yl for yl in range(0,11,1)])
-    plt.ylim([0,9])
+    plt.ylim([0.5,9])
     plt.tight_layout()
     plt.show()
 

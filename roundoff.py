@@ -429,7 +429,7 @@ def show_simple_rd_all_fig(test_data_ids, Ns, samp_range):
                 bins = npz['bins']
             buckets += npz['traverse_buckets']
             buckets += npz['baseline_buckets']
-    plt.figure(figsize=(8,3))
+    plt.figure(figsize=(8,2.5))
     # plt.hist(buckets,bins=bins,log=log)
     if log:
         buckets[buckets > 0] = np.log2(buckets[buckets > 0])
