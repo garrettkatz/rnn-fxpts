@@ -71,7 +71,7 @@ def fiber_fig():
     ptr.scatter(plt.gca(), fxV, 75, c=((0,0,0),))
     V = ptr.lattice([-1.25,-1.25],[1.25,1.25], 20)
     C = np.tanh(W.dot(V))-V
-    ptr.quiver(plt.gca(),V,C,scale=.01,units='dots',width=1,color=((.7,.7,.7),), headwidth=7)
+    ptr.quiver(plt.gca(),V,C,scale=.008,units='dots',width=1,color=((.7,.7,.7),), headwidth=7)
     V = VA[:2,:]
     V = V[:,((-1.25 < V) & (V < 1.25)).all(axis=0)]
     C = np.tanh(W.dot(V))-V
