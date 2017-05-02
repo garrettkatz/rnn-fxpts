@@ -535,6 +535,8 @@ def c_space_fig():
     mpl.rcParams['mathtext.default'] = 'regular'
     # mpl.rcParams.update({'figure.autolayout': True})
     mpl.rcParams.update({'font.size': 14})
+    mpl.rcParams['pdf.fonttype'] = 42
+    mpl.rcParams['ps.fonttype'] = 42
 
     N = 3
     num_C = 8 # should be even or else land exactly on W[i,:]c=0
@@ -622,7 +624,7 @@ def c_space_fig():
     mpl.rcParams['mathtext.default'] = 'it'
     # mpl.rcParams['font.family'] = 'serif'
     # ax.set_title('$\frac{c}{||c||}\in\mathrm{\mathbb{S}}^2$')
-    ax.set_title('$c/||c||\in\mathrm{\mathbb{S}}^2$')
+    # ax.set_title('$c/||c||\in\mathbb{S}^2$') # mathrm incompatible with truetype?
 
     pltr.scatter(ax, C, c=np.array([[bright_cap*g for _ in range(3)] for g in interp]),edgecolor='face')
     # pltr.scatter(ax, C, s=20, c=[str(bright_cap*g) for g in interp],edgecolor='face')
@@ -663,7 +665,7 @@ def c_space_fig():
     plt.xticks([-1,0,1])
     plt.yticks([-1,0,1])
     ax.set_zticks([-1,0,1])
-    ax.set_title('$v\in\mathrm{\mathbb{R}}^3$')
+    # ax.set_title('$v\in\mathrm{\mathbb{R}}^3$')
 
     plt.tight_layout()
     plt.show()

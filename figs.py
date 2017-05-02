@@ -61,6 +61,8 @@ def fiber_fig():
     # mpl.rcParams['mathtext.default'] = 'regular'
     mpl.rcParams['mathtext.default'] = 'it'
     mpl.rcParams.update({'font.size': 18})
+    mpl.rcParams['pdf.fonttype'] = 42
+    mpl.rcParams['ps.fonttype'] = 42
     W = np.array([[1.5, 0.05],[-0.01, 1.5]])
     c = np.array([[1.],[2]])
     _, fxV, VA, _, _, _, _ = rfx.traverse(W, c=c)
