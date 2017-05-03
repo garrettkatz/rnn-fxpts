@@ -753,7 +753,7 @@ def run_TvB_stability_experiments(test_data_id, num_procs):
     pkl.dump(pool_results, results_file)
     results_file.close()
 
-def show_tvb_results(test_data_ids=['dl50','dm10','dh5']):
+def show_tvb_results(test_data_ids=['full_base','big256_base','big512_base','big1024_base']):
     """
     Plot the results of traverse-baseline performance comparison on one or more testing data sets
     test_data_ids should be the list of ids, each as in generate_test_data (without file extension)
@@ -776,6 +776,8 @@ def show_tvb_results(test_data_ids=['dl50','dm10','dh5']):
     mpl.rcParams['mathtext.default'] = 'regular'
     mpl.rcParams.update({'figure.autolayout': True})
     mpl.rcParams.update({'font.size': 12})
+    mpl.rcParams['pdf.fonttype'] = 42
+    mpl.rcParams['ps.fonttype'] = 42
     Ns = np.array([r['N'] for r in results])
     uNs = np.unique(Ns)
     dats = [('T|B','v','none'),('T&B','^','none'),('T-B','s','none'),('B-T','o','none')]
@@ -788,7 +790,6 @@ def show_tvb_results(test_data_ids=['dl50','dm10','dh5']):
         # handles.append(scatter_with_errors(Ns, uNs, y, ym[1],ym[2]))
     handles.append(plt.plot(uNs, np.log2(uNs), 'dk--', ms=9)[0])
     # handles.append(plt.plot(uNs, uNs, 'dk--', ms=9)[0])
-    plt.legend(handles, ['$T\cup\,B$', '$T\cap\,B$', '$T-B$', '$B-T$', 'Known'], loc='upper left')
     # plt.ylim([-1,15])
     # plt.gca().set_yscale('log',basey=2)
     plt.xlim([2**.5,1.5*uNs[-1]])
@@ -800,10 +801,19 @@ def show_tvb_results(test_data_ids=['dl50','dm10','dh5']):
     # plt.gca().set_yticklabels(['2^%s'%(yl.get_text()) for yl in ytick_labels])
     plt.yticks(range(-1,15,2),['0']+['$2^{%d}$'%yl for yl in range(1,15,2)])
     plt.ylim([-2,15])
+    # plt.legend(handles, ['$T\,\cup\,B$', '$T\,\cap\,B$', '$T-B$', '$B-T$', 'Known'], loc='upper left')
+    lgd = plt.legend(handles, ['', '', '$T-B$', '$B-T$', 'Known'], loc='upper left')
+    zord = lgd.get_zorder()+1
+    plt.text(2.65,13.1,'T',zorder = zord, fontsize=15)
+    plt.text(3.4,13.1,'B',zorder = zord, fontsize=15)
+    plt.text(2.65,11.6,'T',zorder = zord, fontsize=15)
+    plt.text(3.4,11.6,'B',zorder = zord, fontsize=15)
+    plt.plot([3.1,3.1,3.13,3.27,3.3,3.3],[11.7,12.15,12.3,12.3,12.15,11.7],'-k',zorder=zord)
+    plt.plot([3.1,3.1,3.13,3.27,3.3,3.3],11.7+1.5+12.3-np.array([11.7,12.15,12.3,12.3,12.15,11.7]),'-k',zorder=zord)
     plt.tight_layout()
     plt.show()
 
-def show_tvb_dist_results(test_data_ids=['dl50','dm10','dh5']):
+def show_tvb_dist_results(test_data_ids=['full_base','big256_base','big512_base','big1024_base']):
     """
     Plot the results of traverse-baseline spatial distribution comparison on one or more testing data sets
     test_data_ids should be the list of ids, each as in generate_test_data (without file extension)
@@ -811,6 +821,8 @@ def show_tvb_dist_results(test_data_ids=['dl50','dm10','dh5']):
     mpl.rcParams['mathtext.default'] = 'regular'
     # mpl.rcParams.update({'figure.autolayout': True})
     mpl.rcParams.update({'font.size': 12})
+    mpl.rcParams['pdf.fonttype'] = 42
+    mpl.rcParams['ps.fonttype'] = 42
     results = []
     plt.figure(figsize=(8,2.65))
     sp = 0
@@ -869,6 +881,8 @@ def show_tvb_stab_result(test_data_id='full_base', N=24, s=0):
     mpl.rcParams['mathtext.default'] = 'regular'
     # mpl.rcParams.update({'figure.autolayout': True})
     mpl.rcParams.update({'font.size': 16})
+    mpl.rcParams['pdf.fonttype'] = 42
+    mpl.rcParams['ps.fonttype'] = 42
     results = load_pkl_file('results/TvB_stable_%s_N_%d_s_%d.pkl'%(test_data_id, N, s))
     npz = load_npz_file('results/TvB_stable_%s_N_%d_s_%d.npz'%(test_data_id, N, s))
     plt.figure(figsize=(11,4.5))
@@ -938,6 +952,8 @@ def show_tvb_stab_results(test_data_ids):
     mpl.rcParams['mathtext.default'] = 'regular'
     # mpl.rcParams.update({'figure.autolayout': True})
     mpl.rcParams.update({'font.size': 12})
+    mpl.rcParams['pdf.fonttype'] = 42
+    mpl.rcParams['ps.fonttype'] = 42
     Ns = np.array([r['N'] for r in results])
     uNs = np.unique(Ns)
     handles = []
@@ -1014,6 +1030,8 @@ def show_tvb_work(test_data_ids):
     mpl.rcParams['mathtext.default'] = 'regular'
     # mpl.rcParams.update({'figure.autolayout': True})
     mpl.rcParams.update({'font.size': 12})
+    mpl.rcParams['pdf.fonttype'] = 42
+    mpl.rcParams['ps.fonttype'] = 42
 
     t_res, b_res, res = [], [], []
     for test_data_id in test_data_ids:
@@ -1186,6 +1204,8 @@ def show_Wc_results(test_data_id='full_choose'):
     """
     results = load_pkl_file('results/%s_Wc.pkl'%test_data_id)
     mpl.rcParams['mathtext.default'] = 'regular'
+    mpl.rcParams['pdf.fonttype'] = 42
+    mpl.rcParams['ps.fonttype'] = 42
     Ns = np.array([r[0]['N'] for r in results])
     uNs = np.unique(Ns)
     handles = []

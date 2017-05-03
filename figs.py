@@ -113,6 +113,8 @@ def delta_fig():
     """
     mpl.rcParams['mathtext.default'] = 'regular'
     mpl.rcParams.update({'font.size': 20})
+    # mpl.rcParams['pdf.fonttype'] = 42
+    # mpl.rcParams['ps.fonttype'] = 42
     x = np.linspace(-3,3,100)
     plt.plot(x,1-np.tanh(x)**2,'k-')
     plt.plot(x,np.zeros(x.shape),'k-')
@@ -134,9 +136,8 @@ def delta_fig():
     plt.text(-.375,-.075,'$\\delta_i$')
     mpl.rcParams.update({'font.size': 12})
     plt.ylabel("$\\sigma'(\\tilde{W}_ix)$",rotation=90,fontsize=16)
-    plt.ylim([-.15,1.15])
     plt.xlabel('$\\tilde{W}_ix$',fontsize=16)
-    # plt.ylabel("$d\sigma/dx$",rotation=0)
+    plt.ylim([-.15,1.15])
     plt.show()
 
 def mu_fig():

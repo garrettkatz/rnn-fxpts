@@ -418,6 +418,8 @@ def show_simple_rd_all_fig(test_data_ids, Ns, samp_range):
     """
     log = True
     mpl.rcParams['mathtext.default'] = 'regular'
+    mpl.rcParams['pdf.fonttype'] = 42
+    mpl.rcParams['ps.fonttype'] = 42
     buckets = None
     bins = None
     for samp in samp_range:
@@ -429,12 +431,12 @@ def show_simple_rd_all_fig(test_data_ids, Ns, samp_range):
                 bins = npz['bins']
             buckets += npz['traverse_buckets']
             buckets += npz['baseline_buckets']
-    plt.figure(figsize=(8,2.5))
+    plt.figure(figsize=(8,2.4))
     # plt.hist(buckets,bins=bins,log=log)
     if log:
         buckets[buckets > 0] = np.log2(buckets[buckets > 0])
     plt.bar(left=bins[:-1],height=buckets,width=bins[1:]-bins[:-1],facecolor='none')
-    plt.ylabel('# of fixed point pairs')
+    plt.ylabel('# of pairs')
     plt.xlabel('$max_i|v_i^{(1)}-v_i^{(2)}|$') #'Max Coordinate-wise Distance')
     xmin_idx = int(((bins[:-1] > -1000) & (buckets > 0)).argmax())
     xstep = int(np.ceil((bins[-1]-bins[xmin_idx])/10))
