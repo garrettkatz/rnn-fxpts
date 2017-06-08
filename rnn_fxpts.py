@@ -533,6 +533,135 @@ def traverse(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_traverse_
     residuals = np.array(residuals)
     return status, fxV, VA, c, step_sizes, s_mins, residuals
 
+def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_step_size=None, max_traverse_steps=None, max_fxpts=None, stop_time=None, logfile=None):
+    """
+    Generator version of traverse.
+    Yields (unprocessed) fixed point candidates one by one, for use in a for loop.
+    Finds candidates around all local |alpha| minima, not only sign changes.
+    W is the weight matrix (N by N numpy.array)
+    va is the initial point (N+1 by 1 numpy.array)
+      if None, traversal starts at the origin
+    c is the direction vector (N by 1 numpy.array)
+      if None, a random direction vector is chosen
+    max_nr_iters is the maximum iterations allowed for Newton-Raphson refinement
+    nr_tol is the tolerance at which Newton-Raphson refinement can terminate
+    max_step_size is a maximum step size to use for each step
+      if None, no limit is imposed on the return value of traverse_step_size
+    max_traverse_steps is the maximum number of steps allowed for traversal
+      if None, traversal continues until another termination criteria is met
+    max_fxpts is the number of fixed points at which traversal can terminate
+      if None, traversal continues until another termination criteria is met
+    stop_time is a clock time (compared with time.clock()) at which traversal is terminated
+      if None, traversal continues until another termination criteria is met
+    logfile is a file object open for writing that records progress
+      if None, no progress is recorded
+
+    yields status, fxv, VA, c, step_sizes, s_mins, residuals, where
+      status is one of
+        "Not done", "Success", "Max steps reached", "Max fxpts found", "Closed loop detected", "Timed out"
+      fxv is the next fixed point candidate
+      VA[:,n] is the n^{th} point along the fiber so far
+      c is the direction vector that was used (N by 1 numpy.array)
+      step_sizes[n] is the step size used for the n^{th} step so far
+      s_mins[n] is the minimum singular value of DF at the n^{th} step so far
+      residuals[n] is the infinity-norm of F at the n^{th} step so far
+    """
+
+    # Set defaults
+    N = W.shape[0]
+    if va is None: va = np.zeros((N+1,1))
+    if c is None:
+        c = np.random.randn(N,1)
+        c = c/np.sqrt((c**2).sum())
+
+    # Constants
+    I = np.eye(N)
+    _W_, _Winv_ = np.eye(N+1), np.eye(N+1)
+    _W_[:N,:N], _Winv_[:N,:N] = W, np.linalg.inv(W)
+
+    # Termination criterion
+    term = get_term(W, c)
+
+    # Drive initial va to curve
+    va = drive_initial_va(W, va, c, max_nr_iters, nr_tol)
+    D = 1 - np.tanh(W.dot(va[:N,:]))**2
+    J = np.concatenate((D*W - I, -c), axis=1)
+    _,_,z = np.linalg.svd(J)
+    z = z[[N],:].T
+
+    # Traverse
+    VA = []
+    step_sizes = []
+    s_mins = []
+    residuals = []
+    num_fxpts = 0
+    checking_cloop = False
+    status = "Traversing"
+    for step in it.count(0):
+
+        # Save fiber
+        VA.append(va)
+
+        # Update quantities
+        D = 1 - np.tanh(W.dot(va[:N,:]))**2
+        J = np.concatenate((D*W - I, -c), axis=1)
+
+        z_new = calc_z_new(J, z)
+
+        # Get step size
+        step_size, rho, s_min = traverse_step_size(_W_, _Winv_, D, J, va, c, z_new)
+        if max_step_size is not None: step_size = min(step_size, max_step_size)
+        step_sizes.append(step_size)
+        s_mins.append(s_min)
+
+        # Take step
+        va_new, F_new = take_traverse_step(W, I, c, va, z_new, step_size, max_nr_iters, nr_tol)
+        residuals.append(np.fabs(F_new).max())
+        va = va_new
+        z = z_new
+
+        # Check local |alpha| minimum
+        if len(VA) == 2 and np.fabs(VA[-2][N]) < np.fabs(VA[-1][N]):
+            num_fxpts += 1
+            yield status, VA[0][:N,:], VA, c, step_sizes, s_mins, residuals
+        if len(VA) >= 3 and np.fabs(VA[-2][N]) < np.fabs(VA[-1][N]) and np.fabs(VA[-2][N]) < np.fabs(VA[-3][N]):
+            num_fxpts += 3
+            yield status, VA[-3][:N,:], VA, c, step_sizes, s_mins, residuals
+            yield status, VA[-2][:N,:], VA, c, step_sizes, s_mins, residuals
+            yield status, VA[-1][:N,:], VA, c, step_sizes, s_mins, residuals
+
+        # Check for asymptote
+        if np.fabs(va[N]) > term:
+            if logfile is not None:
+                hardwrite(logfile,'Asymp: iteration %d of %s, step_size=%f, %d fx found, term: %e > %e\n'%(step,max_traverse_steps,step_size,num_fxpts,np.fabs(va[N]),term))
+            status = "Success"
+            break
+            
+        # Check for closed loop
+        cloop_distance = np.fabs(VA[-1]-VA[0]).max()
+        if len(VA) > 3 and cloop_distance < np.fabs(VA[2]-VA[0]).max():
+            if logfile is not None:
+                hardwrite(logfile,'Cloop: iteration %d of %s, %d fx found, cloop: %e\n'%(step,max_traverse_steps,2*num_fxpts+1, cloop_distance))
+            status = "Closed loop detected"
+            break
+
+        # Early termination criteria
+        if step == max_traverse_steps:
+            status = "Max steps reached"
+            break
+        if max_fxpts is not None and num_fxpts >= max_fxpts:
+            status = "Max fxpts found"
+            break
+        if time.clock() > stop_time:
+            status = "Timed out"
+            break
+
+        if (step % 100) == 0 and logfile is not None:
+            hardwrite(logfile,'iteration %d of %s,step_size=%f,s_min=%e,%d fx,term:%e>? %e,cloop:%e\n'%(step,max_traverse_steps,step_size,s_min,num_fxpts,va[N],term, cloop_distance))
+
+    # final output
+    yield status, np.empty((N,0)), VA, c, step_sizes, s_mins, residuals
+
 def get_test_points():
     """
     Construct a set of 300 test points with at most 3 "unique" members.
