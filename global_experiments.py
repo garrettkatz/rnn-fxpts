@@ -100,19 +100,29 @@ def combo_trial(W, c=None, timeout = .1):
         status[i] is the traversal status at the i^th iterate
     """
     stop_time = time.clock() + timeout
+    # Start with origin component
     V = [np.zeros((W.shape[0],1))]
     timestamp = [time.clock()]
     traversal = [0]
-    status = [None]
-    seeds = rfx.local_search(W, stop_time=stop_time)
-    VA = [[np.zeros((W.shape[0]+1,1))]]
+    status = ['Traversing']
     t = 0
+    fiber_component = rfx.directional_fiber(W, c=c, stop_time=stop_time)
+    for iterate in fiber_component:
+        V_new, _, _ = process_fxpt(W, V[-1], iterate[1])
+        V.append(V_new)
+        timestamp.append(time.clock())
+        traversal.append(t)
+        status.append(iterate[0])
+    VA = [iterate[2]]
+    c = iterate[3] # Same c for subsequent traversals
+    # Do non-origin components with local seeds
+    seeds = rfx.local_search(W, stop_time=stop_time)
     for seed_status, fxv, _ in seeds:
         # check if timed out
         if seed_status == 'Timed out': break
-        # check if already found
-        _, _, dup = process_fxpt(W, V[-1], fxv)
-        if dup: continue
+        # check if not fixed or already found
+        _, fx, dup = process_fxpt(W, V[-1], fxv)
+        if dup or not fx: continue
         # traverse component
         va = np.concatenate((fxv, [[0]]), axis=0)
         t += 1
@@ -123,40 +133,32 @@ def combo_trial(W, c=None, timeout = .1):
             timestamp.append(time.clock())
             traversal.append(t)
             status.append(iterate[0])
-            c = iterate[3]
-            print(len(iterate[2]), iterate[2][0].shape)
-        print(len(iterate[2]), iterate[2][0].shape,'!')
         VA.append(iterate[2])
     return V, timestamp, traversal, c, status, VA
 
 def main():
-    N = 2
+    N = 8
     test_data = fe.generate_test_data(network_sizes=[N], num_samples=[1], refine_iters = 1)
     W = test_data['N_%d_W_0'%N]
 
+    print('starting: %f'%time.clock())
     # V, timestamp = local_trial(W)
     # V, timestamp, traversal, c, status, VA = fiber_trial(W, timeout=1)
-    V, timestamp, traversal, c, status, VA = fiber_trial(W, repeats=1)
-    # V, timestamp, traversal, c, status, VA = combo_trial(W, timeout=1)
-
-    #status, fxV, VA, c, step_sizes, s_mins, residuals
-    # trav = rfx.traverse(W, c=c[1])
+    # V, timestamp, traversal, c, status, VA = fiber_trial(W, repeats=1)
+    V, timestamp, traversal, c, status, VA = combo_trial(W, timeout=5)
 
     for i in range(len(V)):
+        if status[i] == 'Traversing': continue
         print(timestamp[i],V[i].shape[1], traversal[i], status[i])
         
-    # return VA
-    # ax = plt.gca(projection='3d')
-    ax = plt.gca()
-    for va in VA[1:]:
-        va = np.concatenate(va,axis=1)[:N,:]
-        print(np.fabs(va[:,1:]-va[:,:-1]).max(axis=0).max())
-        ptr.plot(ax,va,'ko-')
-    ptr.plot(ax,V[-1],'r.')
-    
-    # ptr.plot(ax, trav[2][:N,:], 'go-')
-    
-    plt.show()
+    # if N == 3: ax = plt.gca(projection='3d')
+    # else: ax = plt.gca()
+    # for va in VA:
+    #     va = np.concatenate(va,axis=1)[:N,:]
+    #     print(np.fabs(va[:,1:]-va[:,:-1]).max(axis=0).max())
+    #     ptr.plot(ax,va,'ko-')
+    # ptr.plot(ax,V[-1],'r.')    
+    # plt.show()
     
 if __name__=='__main__':
     main()
