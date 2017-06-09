@@ -17,6 +17,7 @@ def main():
                     fxpts = np.concatenate((fxpts, fxv),axis=1)
     print(status) # status
     print(fxpts)
+    print(np.tanh(W.dot(fxpts))-fxpts)
 
 if __name__=='__main__':
     main()

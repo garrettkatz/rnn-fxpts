@@ -537,7 +537,7 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
     """
     Generator version of traverse.
     Yields (unprocessed) fixed point candidates one by one, for use in a for loop.
-    Finds candidates around all local |alpha| minima, not only sign changes.
+    Also finds candidates around all local |alpha| minima, not only sign changes.
     W is the weight matrix (N by N numpy.array)
     va is the initial point (N+1 by 1 numpy.array)
       if None, traversal starts at the origin
@@ -874,6 +874,54 @@ def baseline_solver(W, timeout=60, max_fxpts=None, max_traj_steps=10, logfile=No
     max_fxpts is the number of fixed points after which the solver is allowed to terminate.
       if None, solver continues until timeout.
     max_traj_steps is the maximum number of steps along a trajectory before optimization starts.
+    logfile is a file object open for writing that records progress
+      if None, no progress is recorded
+    returns fxV, num_reps, where
+      fxV[:,p] is the p^{th} (potentially non-fixed or duplicate) point found (a numpy.array)
+      num_reps is the number of repetitions performed before timeout (i.e., fxV.shape[1])
+    """
+    N = W.shape[0]
+    fxV = []
+    neighbors = lambda X, y: identical_fixed_points(W, X, y)[0]
+    start = time.clock()
+    for num_reps in it.count(1):
+
+        # get random initial seed anywhere in range
+        v = 2*np.random.rand(W.shape[0],1) - 1
+
+        # iterate trajectory a random number of steps
+        num_traj_steps = np.random.randint(max_traj_steps)
+        for step in range(num_traj_steps):
+            v = np.tanh(W.dot(v))
+
+        # run minimization
+        res = spo.minimize(baseline_solver_qg, v.flatten(), args=(W,), method='trust-ncg', jac=True, hess=baseline_solver_G)
+        fxv = res.x.reshape((W.shape[0],1))
+        fxV.append(fxv)
+
+        # check termination
+        runtime = time.clock()-start
+        if runtime > timeout:
+            if logfile is not None:
+                hardwrite(logfile,'term: %d reps %fs\n'%(num_reps,runtime))
+            break
+
+        if (num_reps % 10) == 0 and logfile is not None:
+            hardwrite(logfile,'%d reps (%f of %fs)\n'%(num_reps, runtime, timeout))
+
+    fxV = np.concatenate(fxV,axis=1)
+    return fxV, num_reps
+
+def random_search(W, max_fxpts=None, max_traj_steps=10, stop_time=None, logfile=None):
+    """
+    A generator version of the baseline solver.
+    Yields (unprocessed) fixed point candidates one by one, for use in a for loop.
+    W should be the weight matrix (N by N numpy.array)
+    max_fxpts is the number of fixed points after which the solver is allowed to terminate.
+      if None, solver continues until timeout.
+    max_traj_steps is the maximum number of steps along a trajectory before optimization starts.
+    stop_time is a clock time (compared with time.clock()) at which random search is terminated
+      if None, search continues until another termination criteria is met
     logfile is a file object open for writing that records progress
       if None, no progress is recorded
     returns fxV, num_reps, where
