@@ -5,9 +5,7 @@ File names provided to methods in this module should follow these naming convent
   traverse_<test data id>_N_<N>_s_<s>: results for traverse on the s^{th} network of size N
   baseline_<test data id>_N_<N>_s_<s>: results for traverse on the s^{th} network of size N
   TvB_<test data id>_N_<N>_s_<s>: results of traverse-baseline comparison on the s^{th} network of size N
-
   <test data id>_Wc_N_<N>_s_<s>: results of c-choice comparison on the s^{th} network of size N
-
   traverse_re_<test data id>_N_<N>_s_<s>: relative errors for round-off in traverse on the s^{th} network of size N
   traverse_rd_<test data id>_N_<N>_s_<s>: relative distances for round-off in traverse on the s^{th} network of size N
   baseline_re_<test data id>_N_<N>_s_<s>: relative errors for round-off in baseline on the s^{th} network of size N

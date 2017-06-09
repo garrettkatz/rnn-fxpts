@@ -623,12 +623,12 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
         # Check local |alpha| minimum
         if len(VA) == 2 and np.fabs(VA[-2][N]) < np.fabs(VA[-1][N]):
             num_fxpts += 1
-            yield status, VA[0][:N,:], VA, c, step_sizes, s_mins, residuals
+            yield status, np.copy(VA[0][:N,:]), VA, c, step_sizes, s_mins, residuals
         if len(VA) >= 3 and np.fabs(VA[-2][N]) < np.fabs(VA[-1][N]) and np.fabs(VA[-2][N]) < np.fabs(VA[-3][N]):
             num_fxpts += 3
-            yield status, VA[-3][:N,:], VA, c, step_sizes, s_mins, residuals
-            yield status, VA[-2][:N,:], VA, c, step_sizes, s_mins, residuals
-            yield status, VA[-1][:N,:], VA, c, step_sizes, s_mins, residuals
+            yield status, np.copy(VA[-3][:N,:]), VA, c, step_sizes, s_mins, residuals
+            yield status, np.copy(VA[-2][:N,:]), VA, c, step_sizes, s_mins, residuals
+            yield status, np.copy(VA[-1][:N,:]), VA, c, step_sizes, s_mins, residuals
 
         # Check for asymptote
         if np.fabs(va[N]) > term:
@@ -912,7 +912,7 @@ def baseline_solver(W, timeout=60, max_fxpts=None, max_traj_steps=10, logfile=No
     fxV = np.concatenate(fxV,axis=1)
     return fxV, num_reps
 
-def random_search(W, max_traj_steps=10, max_repetitions=None, stop_time=None, logfile=None):
+def local_search(W, max_traj_steps=10, max_repetitions=None, stop_time=None, logfile=None):
     """
     A generator version of the baseline solver.
     Yields (unprocessed) fixed point candidates one by one, for use in a for loop.
