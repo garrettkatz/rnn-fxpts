@@ -558,7 +558,7 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
 
     yields status, fxv, VA, c, step_sizes, s_mins, residuals, where
       status is one of
-        "Not done", "Success", "Max steps reached", "Max fxpts found", "Closed loop detected", "Timed out"
+        "Traversing", "Success", "Max steps reached", "Max fxpts found", "Closed loop detected", "Timed out"
       fxv is the next fixed point candidate
       VA[:,n] is the n^{th} point along the fiber so far
       c is the direction vector that was used (N by 1 numpy.array)
@@ -646,13 +646,13 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
             break
 
         # Early termination criteria
-        if step == max_traverse_steps:
+        if max_traverse_steps is not None and step >= max_traverse_steps:
             status = "Max steps reached"
             break
         if max_fxpts is not None and num_fxpts >= max_fxpts:
             status = "Max fxpts found"
             break
-        if time.clock() > stop_time:
+        if stop_time is not None and time.clock() > stop_time:
             status = "Timed out"
             break
 
@@ -912,7 +912,7 @@ def baseline_solver(W, timeout=60, max_fxpts=None, max_traj_steps=10, logfile=No
     fxV = np.concatenate(fxV,axis=1)
     return fxV, num_reps
 
-def random_search(W, max_fxpts=None, max_traj_steps=10, stop_time=None, logfile=None):
+def random_search(W, max_traj_steps=10, max_repetitions=None, stop_time=None, logfile=None):
     """
     A generator version of the baseline solver.
     Yields (unprocessed) fixed point candidates one by one, for use in a for loop.
@@ -924,15 +924,16 @@ def random_search(W, max_fxpts=None, max_traj_steps=10, stop_time=None, logfile=
       if None, search continues until another termination criteria is met
     logfile is a file object open for writing that records progress
       if None, no progress is recorded
-    returns fxV, num_reps, where
-      fxV[:,p] is the p^{th} (potentially non-fixed or duplicate) point found (a numpy.array)
-      num_reps is the number of repetitions performed before timeout (i.e., fxV.shape[1])
+    yields status, fxv, V where
+      status is one of
+        "Searching", "Max repetitions", "Timed out"
+      fxv is the next candidate point found
+      V[p] is the p^th candidate found so far
     """
     N = W.shape[0]
-    fxV = []
-    neighbors = lambda X, y: identical_fixed_points(W, X, y)[0]
-    start = time.clock()
-    for num_reps in it.count(1):
+    V = []
+    status = 'Searching'
+    for repetition in it.count(1):
 
         # get random initial seed anywhere in range
         v = 2*np.random.rand(W.shape[0],1) - 1
@@ -945,20 +946,26 @@ def random_search(W, max_fxpts=None, max_traj_steps=10, stop_time=None, logfile=
         # run minimization
         res = spo.minimize(baseline_solver_qg, v.flatten(), args=(W,), method='trust-ncg', jac=True, hess=baseline_solver_G)
         fxv = res.x.reshape((W.shape[0],1))
-        fxV.append(fxv)
+        V.append(fxv)
+
+        # yield
+        yield status, fxv, V
 
         # check termination
-        runtime = time.clock()-start
-        if runtime > timeout:
-            if logfile is not None:
-                hardwrite(logfile,'term: %d reps %fs\n'%(num_reps,runtime))
+        if max_repetitions is not None and len(V) >= max_repetitions:
+            status = 'Max repetitions'
+            break
+        if stop_time is not None and time.clock() > stop_time:
+            status = 'Timed out'
             break
 
-        if (num_reps % 10) == 0 and logfile is not None:
-            hardwrite(logfile,'%d reps (%f of %fs)\n'%(num_reps, runtime, timeout))
+        if (len(V) % 10) == 0 and logfile is not None:
+            hardwrite(logfile,'%d reps (%f <= %fs)\n'%(len(V), time.clock(), stop_time))
+            
+    if logfile is not None:
+        hardwrite(logfile,'term: %d reps %fs\n'%(num_reps,runtime))
 
-    fxV = np.concatenate(fxV,axis=1)
-    return fxV, num_reps
+    yield status, np.empty((N,0)), V
 
 def post_process_fxpts(W, fxV, logfile=None, refine_cap=10000, Winv=None, neighbors=None):
     """

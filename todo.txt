@@ -1,6 +1,13 @@
-rerun all full_base stability (again!) with max_eigs
-consistent figure sizes (at least widths)
-as consistent as possible in log vs normal axis scaling while still legible
+3d fxpt:
+    Grid sampling of each W_ij in [-A,A] with A > 1.  So r^9 where r is the sampling rate.
+    "Continuous" path through each resulting W sample.
+    At each W, grid sampling of c (~ r^2).
+    At each (W,c), track # of connected components in fiber, and length/steps/runtime/most "singular" point.
+    For each W, identify optimal c (best [runtime] of all c with fully connected fiber)
+    Visualization where W changes "continuously" through the samples, at each one plotting W rows, columns, eigs, svds, etc, along with optimal c.
+    Looking for coincidence of c with some W feature ideally, or if not coincidence, correlation in the movement.
+    Can permutations of W rows or columns be omitted from the grid search wolog?
+
 make fxpt_experiments more consolidated and consistent
     filename prefixes/suffixes for different experiments
     encapsulate duplicated code
