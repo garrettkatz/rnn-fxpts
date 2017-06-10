@@ -117,7 +117,7 @@ def get_unique_points_recursively(V, neighbors=None, base=2):
         V_unique, _ = get_unique_points(np.concatenate(V_split,axis=1), neighbors=neighbors)
     return V_unique
 
-def get_unique_fxpts(W, fxV):
+def get_unique_fxpts(W, fxV, neighbors = None):
     """
     Extracts "unique" fixed points from a set of duplicates.
     W is the weight matrix (a numpy.array).

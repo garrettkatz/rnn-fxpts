@@ -1,3 +1,15 @@
+better term ratio: use time elapsed between last and second-to-last fixed point found
+
+things to plot:
+    example absolute for local, fiber, combo over time
+    average % of union for local, fiber, and combo over time
+    average "time to hit union" for local, fiber, combo (make sure second half of time, nothing new found)
+    example histogram # of disconnected components for single N
+    average+stdev # of disconnected components over different N
+    example histogram # of points per disconnected component
+    average # of points per disconnected component over N
+    everything 3d fxpt
+
 3d fxpt:
     Grid sampling of each W_ij in [-A,A] with A > 1.  So r^9 where r is the sampling rate.
     "Continuous" path through each resulting W sample.
