@@ -5,30 +5,6 @@ import fxpt_experiments as fe
 import matplotlib.pyplot as plt
 import plotter as ptr
 
-def process_fxpt(W, V, v, tolerance = 2**-21):
-    """
-    Process a new candidate fixed point v against existing set V
-    V[:,p] is the p^th fixed point found so far
-    tolerance is the maximum infinity norm at which two points are considered duplicates
-    Refines v and checks whether v is fixed
-    Checks for duplicates of v in V
-    Returns V_new, fx, dup where
-        V_new is (V union {+v,-v}) with duplicates removed if v is fixed
-        V_new is V if v is not fixed
-        fx is true iff v is fixed
-        dup is true if there were duplicates
-    """
-    v, fx = rfx.refine_fxpts(W, v)    
-    dup = False
-    if fx:
-        duplicates = (np.fabs(V-v).max(axis=0) < tolerance) | (np.fabs(V+v).max(axis=0) < tolerance)
-        dup = duplicates.any()
-        if np.fabs(v).max(axis=0) < tolerance: # zero fxpt
-            V = np.concatenate((V[:, ~duplicates], v), axis=1)
-        else:
-            V = np.concatenate((V[:, ~duplicates], v, -v), axis=1)
-    return V, fx, dup
-
 def local_trial(W, timeout = .1):
     """
     Run a solver trial using only repeated local search
@@ -43,7 +19,7 @@ def local_trial(W, timeout = .1):
     timestamp = [time.clock()]
     iterates = rfx.local_search(W, stop_time=stop_time)
     for status, v, _ in iterates:
-        V_new, _, _ = process_fxpt(W, V[-1], v)
+        V_new, _, _ = rfx.process_fxpt(W, V[-1], v)
         V.append(V_new)
         timestamp.append(time.clock())
     return V, timestamp
@@ -77,7 +53,7 @@ def fiber_trial(W, timeout = .1, repeats = None):
         t += 1
         iterates = rfx.directional_fiber(W, stop_time=stop_time)
         for iterate in iterates:
-            V_new, _, _ = process_fxpt(W, V[-1], iterate[1])
+            V_new, _, _ = rfx.process_fxpt(W, V[-1], iterate[1])
             V.append(V_new)
             timestamp.append(time.clock())
             traversal.append(t)
@@ -97,10 +73,12 @@ def combo_trial(W, c=None, timeout=1, term_ratio=None):
     returns V, timestamp, traversal, c, status, where
         V[i][:,p] is the p^th fixed point found after the i^th iterate
         timestamp[i] is the clock time after the i^th iterate
-        traversal[i]: is t, where the t^th traversal returned the i^th iterate
+        traversal[i] is t, where the t^th traversal returned the i^th iterate
         c is the random c used by all iterates
         status[i] is the traversal status at the i^th iterate, except 
         status[-1] is 'Term ratio satisfied' if method exits successfully
+        VA[t] is the fiber of the t^th traversal
+        seed[t] is the seed used for the t^th traversal
     """
     start_time = time.clock()
     stop_time = start_time + timeout
@@ -113,12 +91,13 @@ def combo_trial(W, c=None, timeout=1, term_ratio=None):
     fiber_component = rfx.directional_fiber(W, c=c, stop_time=stop_time)
     for iterate in fiber_component:
         fxpt_time = time.clock()
-        V_new, _, _ = process_fxpt(W, V[-1], iterate[1])
+        V_new, _, _ = rfx.process_fxpt(W, V[-1], iterate[1])
         V.append(V_new)
         timestamp.append(time.clock())
         traversal.append(t)
         status.append(iterate[0])
     VA = [iterate[2]]
+    seed = [np.zeros((W.shape[0],1))]
     c = iterate[3] # Same c for subsequent traversals
     # Do non-origin components with local seeds
     seeds = rfx.local_search(W, stop_time=stop_time)
@@ -131,20 +110,21 @@ def combo_trial(W, c=None, timeout=1, term_ratio=None):
             # status[-1] = 'Term ratio satisfied'
             break
         # check if not fixed or already found
-        _, fx, dup = process_fxpt(W, V[-1], fxv)
+        _, fx, dup = rfx.process_fxpt(W, V[-1], fxv)
         if dup or not fx: continue
         # traverse component
         va = np.concatenate((fxv, [[0]]), axis=0)
         t += 1
+        seed.append(va)
         fiber_component = rfx.directional_fiber(W, va=va, c=c, stop_time=stop_time)
         for iterate in fiber_component:
-            V_new, _, _ = process_fxpt(W, V[-1], iterate[1])
+            V_new, _, _ = rfx.process_fxpt(W, V[-1], iterate[1])
             V.append(V_new)
             timestamp.append(time.clock())
             traversal.append(t)
             status.append(iterate[0])
         VA.append(iterate[2])
-    return V, timestamp, traversal, c, status, VA
+    return V, timestamp, traversal, c, status, VA, seed
 
 def mini_compare():
 
@@ -195,27 +175,32 @@ def main():
         timeout = 500
         term_ratio = 2
         start = time.clock()
-        V, timestamp, traversal, c, status, VA = combo_trial(W, timeout=timeout, term_ratio=term_ratio)
+        V, timestamp, traversal, c, status, VA, seed = combo_trial(W, timeout=timeout, term_ratio=term_ratio)
         end_status = []
         bad_status = False
-        success_idx = 0
+        bad_t = 0
+        bad_i = 0
         for i in range(len(traversal)):
             if i == len(traversal)-1 or traversal[i] != traversal[i+1]:
                 print(traversal[i],status[i])
                 end_status.append(status[i])
-                if len(end_status) > 1 and end_status[-1] == 'Success':
-                    success_idx = traversal[i]
+                if (len(end_status) > 1 and end_status[-1] == 'Success') or (len(end_status) == 1 and end_status[-1] != 'Success'):
+                    bad_t = traversal[i]
+                    bad_i = i
                     bad_status = True
+                    if bad_status: break
         print('%d fxpts, %d components, took %f of %f seconds'%(V[-1].shape[1], traversal[-1]+1, time.clock()-start, timeout))
         if bad_status: break
 
-    print(V[-1][:,np.argsort(np.fabs(V[-1]).max(axis=0))[:5]])
-    print('\a')
+    # print(V[-1][:,np.argsort(np.fabs(V[-1]).max(axis=0))[:5]])
+    print(seed[bad_t])
+    print('\a') # beep
     if N == 3: ax = plt.gca(projection='3d')
     else: ax = plt.gca()
     ptr.plot(ax,np.concatenate(VA[0],axis=1)[:N,:],'ko-')
-    ptr.plot(ax,np.concatenate(VA[success_idx],axis=1)[:N,:],'go-')
+    ptr.plot(ax,np.concatenate(VA[bad_t],axis=1)[:N,:],'go-')
     ptr.plot(ax,V[-1],'r.')    
+    ptr.set_lims(ax,3*np.ones((N,1))*np.array([-1,1]))
     plt.show()
     
 if __name__=='__main__':

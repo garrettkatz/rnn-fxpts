@@ -1,4 +1,7 @@
+really need a provable that alpha sign will not flip for theta in [0, theta^*]
+combo_trial should group all outputs by traversal, not by individual iterate
 better term ratio: use time elapsed between last and second-to-last fixed point found
+make optional to refine in ge.process_point?
 
 things to plot:
     example absolute for local, fiber, combo over time

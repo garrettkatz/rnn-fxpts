@@ -533,11 +533,11 @@ def traverse(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_traverse_
     residuals = np.array(residuals)
     return status, fxV, VA, c, step_sizes, s_mins, residuals
 
-def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_step_size=None, max_traverse_steps=None, max_fxpts=None, stop_time=None, logfile=None):
+def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_step_size=None, max_traverse_steps=None, max_refine_steps=2**5, max_fxpts=None, stop_time=None, logfile=None):
     """
     Generator version of traverse.
-    Yields (unprocessed) fixed point candidates one by one, for use in a for loop.
-    Also finds candidates around all local |alpha| minima, not only sign changes.
+    Yields refined fixed point candidates one by one, for use in a for loop.
+    Refines candidates around all local |alpha| minima, not only sign changes.
     W is the weight matrix (N by N numpy.array)
     va is the initial point (N+1 by 1 numpy.array)
       if None, traversal starts at the origin
@@ -549,6 +549,7 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
       if None, no limit is imposed on the return value of traverse_step_size
     max_traverse_steps is the maximum number of steps allowed for traversal
       if None, traversal continues until another termination criteria is met
+    max_refine_steps is the maximum number of steps allowed for candidate fixed point refinement, as in refine_fiber_fxpt
     max_fxpts is the number of fixed points at which traversal can terminate
       if None, traversal continues until another termination criteria is met
     stop_time is a clock time (compared with time.clock()) at which traversal is terminated
@@ -556,7 +557,7 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
     logfile is a file object open for writing that records progress
       if None, no progress is recorded
 
-    yields status, fxv, VA, c, step_sizes, s_mins, residuals, where
+    yields status, fxv, VA, c, step_sizes, s_mins, residuals, refinement, where
       status is one of
         "Traversing", "Success", "Max steps reached", "Max fxpts found", "Closed loop detected", "Timed out"
       fxv is the next fixed point candidate
@@ -565,6 +566,7 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
       step_sizes[n] is the step size used for the n^{th} step so far
       s_mins[n] is the minimum singular value of DF at the n^{th} step so far
       residuals[n] is the infinity-norm of F at the n^{th} step so far
+      refinement is the output of refine_fiber_fxpt for the current candidate
     """
 
     # Set defaults
@@ -595,7 +597,7 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
     s_mins = []
     residuals = []
     num_fxpts = 0
-    checking_cloop = False
+    cloop_distance = np.nan
     status = "Traversing"
     for step in it.count(0):
 
@@ -621,14 +623,15 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
         z = z_new
 
         # Check local |alpha| minimum
-        if len(VA) == 2 and np.fabs(VA[-2][N]) < np.fabs(VA[-1][N]):
-            num_fxpts += 1
-            yield status, np.copy(VA[0][:N,:]), VA, c, step_sizes, s_mins, residuals
-        if len(VA) >= 3 and np.fabs(VA[-2][N]) < np.fabs(VA[-1][N]) and np.fabs(VA[-2][N]) < np.fabs(VA[-3][N]):
-            num_fxpts += 3
-            yield status, np.copy(VA[-3][:N,:]), VA, c, step_sizes, s_mins, residuals
-            yield status, np.copy(VA[-2][:N,:]), VA, c, step_sizes, s_mins, residuals
-            yield status, np.copy(VA[-1][:N,:]), VA, c, step_sizes, s_mins, residuals
+        if len(VA) == 2 or (len(VA) > 2 and np.fabs(VA[-2][N]) < np.fabs(VA[-1][N]) and np.fabs(VA[-2][N]) < np.fabs(VA[-3][N])):
+            B = -2 if len(VA) == 2 else -3
+            for b in range(B,0):
+                refinement =  refine_fiber_fxpt(W, _W_, _Winv_, c, VA[b].copy(), z,
+                    max_nr_iters=max_nr_iters, nr_tol=nr_tol, max_step_size=max_step_size,
+                    max_refine_steps=max_refine_steps, stop_time=stop_time, logfile=logfile)
+                _, fxv, _, _, _, _ = refinement
+                num_fxpts += 1
+                yield status, fxv, VA[:len(VA)+b+1], c, step_sizes, s_mins, residuals, refinement
 
         # Check for asymptote
         if np.fabs(va[N]) > term:
@@ -638,12 +641,13 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
             break
             
         # Check for closed loop
-        cloop_distance = np.fabs(VA[-1]-VA[0]).max()
-        if len(VA) > 3 and cloop_distance < np.fabs(VA[2]-VA[0]).max():
-            if logfile is not None:
-                hardwrite(logfile,'Cloop: iteration %d of %s, %d fx found, cloop: %e\n'%(step,max_traverse_steps,2*num_fxpts+1, cloop_distance))
-            status = "Closed loop detected"
-            break
+        if len(VA) > 7:
+            cloop_distance = np.fabs(VA[-1]-VA[4]).max()
+            if cloop_distance < np.fabs(VA[6]-VA[4]).max():
+                if logfile is not None:
+                    hardwrite(logfile,'Cloop: iteration %d of %s, %d fx found, cloop: %e\n'%(step,max_traverse_steps,2*num_fxpts+1, cloop_distance))
+                status = "Closed loop detected"
+                break
 
         # Early termination criteria
         if max_traverse_steps is not None and step >= max_traverse_steps:
@@ -660,7 +664,116 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
             hardwrite(logfile,'iteration %d of %s,step_size=%f,s_min=%e,%d fx,term:%e>? %e,cloop:%e\n'%(step,max_traverse_steps,step_size,s_min,num_fxpts,va[N],term, cloop_distance))
 
     # final output
-    yield status, np.empty((N,0)), VA, c, step_sizes, s_mins, residuals
+    yield status, np.empty((N,0)), VA, c, step_sizes, s_mins, residuals, ()
+
+def refine_fiber_fxpt(W, _W_, _Winv_, c, va, z, max_nr_iters=2**8, nr_tol=2**-32, max_step_size=None, max_refine_steps=None, stop_time=None, logfile=None):
+    """
+    Newton's method within the fiber to refine a candidate fixed points
+    W is the weight matrix (N by N numpy.array)
+    _W_, _Winv_ are the auxiliary weight matrices from directional_fiber
+    c is the direction vector (N by 1 numpy.array)
+    va is the initial candidate point (N+1 by 1 numpy.array)
+    z is the initial fiber tangent vector (N+1 by 1 numpy.array)
+    max_nr_iters is the maximum inner iterations allowed for Newton-Raphson refinement back to the fiber
+    nr_tol is the tolerance at which Newton-Raphson refinement back to the fiber can terminate
+    max_step_size is a maximum step size to use for each step
+      if None, no limit is imposed on the return value of traverse_step_size
+    max_refine_steps is the maximum number of outer steps allowed for fixed point refinement
+      if None, refinement continues until another termination criteria is met
+    stop_time is a clock time (compared with time.clock()) at which refinement is terminated
+      if None, refinement continues until another termination criteria is met
+    logfile is a file object open for writing that records progress
+      if None, no progress is recorded
+
+    returns status, fxv, VA, step_sizes, s_mins, residuals, where
+      status is one of
+        "Refining", "Converged", "Max refine steps reached", "Timed out"
+      fxv is the refined fixed point
+      VA[:,n] is the n^{th} point along the fiber during refinement
+      step_sizes[n] is the step size used for the n^{th} step during refinement
+      s_mins[n] is the minimum singular value of DF at the n^{th} step during refinement
+      residuals[n] is the infinity-norm of F at the n^{th} step during refinement
+    """
+
+    # Constants
+    N = W.shape[0]
+    I = np.eye(N)
+
+    # Traverse
+    VA = []
+    step_sizes = []
+    s_mins = []
+    residuals = []
+    status = "Refining"
+    for step in it.count(0):
+
+        # Save fiber
+        VA.append(va)
+
+        # Update quantities
+        D = 1 - np.tanh(W.dot(va[:N,:]))**2
+        J = np.concatenate((D*W - I, -c), axis=1)
+
+        z_new = calc_z_new(J, z)
+
+        # Get step size
+        step_size, rho, s_min = traverse_step_size(_W_, _Winv_, D, J, va, c, z_new)
+        newton_step_size = -va[N]/z_new[N]
+        step_size = min(step_size, newton_step_size)
+        if max_step_size is not None: step_size = min(step_size, max_step_size)
+        step_sizes.append(step_size)
+        s_mins.append(s_min)
+
+        # Take step
+        va_new, F_new = take_traverse_step(W, I, c, va, z_new, step_size, max_nr_iters, nr_tol)
+        residuals.append(np.fabs(F_new).max())
+        va = va_new
+        z = z_new
+
+        # Check convergence
+        fixed, margin = fixed_within_eps(W, va[:N,:])
+        if fixed.all():
+            status = "Converged"
+            break
+
+        # Early termination criteria
+        if max_refine_steps is not None and step >= max_refine_steps:
+            status = "Max refine steps reached"
+            break
+        if stop_time is not None and time.clock() > stop_time:
+            status = "Timed out"
+            break
+
+        if (step % 10) == 0 and logfile is not None:
+            hardwrite(logfile,'refine iteration %d of %s,step_size=%f,s_min=%e,resid/margin:%e\n'%(step,max_refine_steps,step_size,s_min,(F_new/margin).max()))
+
+    # final output
+    fxv = va[:N,:].copy()
+    return status, fxv, VA, step_sizes, s_mins, residuals
+
+def process_fxpt(W, V, v, tolerance = 2**-21):
+    """
+    Process a new candidate fixed point v against existing set V
+    V[:,p] is the p^th fixed point found so far
+    tolerance is the maximum infinity norm at which two points are considered duplicates
+    Refines v and checks whether v is fixed
+    Checks for duplicates of v in V
+    Returns V_new, fx, dup where
+        V_new is (V union {+v,-v}) with duplicates removed if v is fixed
+        V_new is V if v is not fixed
+        fx is true iff v is fixed
+        dup is true if there were duplicates
+    """
+    v, fx = refine_fxpts(W, v)    
+    dup = False
+    if fx:
+        duplicates = (np.fabs(V-v).max(axis=0) < tolerance) | (np.fabs(V+v).max(axis=0) < tolerance)
+        dup = duplicates.any()
+        if np.fabs(v).max(axis=0) < tolerance: # zero fxpt
+            V = np.concatenate((V[:, ~duplicates], v), axis=1)
+        else:
+            V = np.concatenate((V[:, ~duplicates], v, -v), axis=1)
+    return V, fx, dup
 
 def get_test_points():
     """
@@ -1044,3 +1157,4 @@ def show_fiber(W, fxpts, fiber, savefile=None):
     if savefile is not None:
         plt.savefig(savefile)
     plt.show()
+
