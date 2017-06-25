@@ -1,4 +1,6 @@
-really need a provable that alpha sign will not flip for theta in [0, theta^*]
+really need a provable that alpha sign will not flip for theta in [0, theta^*]?
+    based on a belief that in the problem cases, that first step is jumping right over.
+    verify this belief on a problem case by reducing max_step_size until it isn't overstepped.
 combo_trial should group all outputs by traversal, not by individual iterate
 better term ratio: use time elapsed between last and second-to-last fixed point found
 make optional to refine in ge.process_point?
