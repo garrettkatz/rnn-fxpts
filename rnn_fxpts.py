@@ -622,9 +622,12 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
         va = va_new
         z = z_new
 
-        # Check local |alpha| minimum
-        if len(VA) == 2 or (len(VA) > 2 and np.fabs(VA[-2][N]) < np.fabs(VA[-1][N]) and np.fabs(VA[-2][N]) < np.fabs(VA[-3][N])):
-            B = -2 if len(VA) == 2 else -3
+        # Check local |alpha| minimum OR alpha sign change (neither implies the other in discretization)
+        origin = (len(VA) == 2)
+        sign_change = (len(VA) > 1 and not np.sign(VA[-1][N]) == np.sign(VA[-2][N]))
+        local_min = (len(VA) > 2 and np.fabs(VA[-2][N]) <= np.fabs(VA[-1][N]) and np.fabs(VA[-2][N]) <= np.fabs(VA[-3][N]))
+        if origin or sign_change or local_min:
+            B = -3 if local_min else -2
             for b in range(B,0):
                 refinement =  refine_fiber_fxpt(W, _W_, _Winv_, c, VA[b].copy(), z,
                     max_nr_iters=max_nr_iters, nr_tol=nr_tol, max_step_size=max_step_size,
@@ -758,22 +761,23 @@ def process_fxpt(W, V, v, tolerance = 2**-21):
     tolerance is the maximum infinity norm at which two points are considered duplicates
     Refines v and checks whether v is fixed
     Checks for duplicates of v in V
-    Returns V_new, fx, dup where
+    Returns V_new, fx, dup, fxv where
         V_new is (V union {+v,-v}) with duplicates removed if v is fixed
         V_new is V if v is not fixed
         fx is true iff v is fixed
         dup is true if there were duplicates
+        fxv is the refined v
     """
-    v, fx = refine_fxpts(W, v)    
+    fxv, fx = refine_fxpts(W, v)    
     dup = False
     if fx:
-        duplicates = (np.fabs(V-v).max(axis=0) < tolerance) | (np.fabs(V+v).max(axis=0) < tolerance)
+        duplicates = (np.fabs(V-fxv).max(axis=0) < tolerance) | (np.fabs(V+fxv).max(axis=0) < tolerance)
         dup = duplicates.any()
-        if np.fabs(v).max(axis=0) < tolerance: # zero fxpt
-            V = np.concatenate((V[:, ~duplicates], v), axis=1)
+        if np.fabs(fxv).max(axis=0) < tolerance: # zero fxpt
+            V = np.concatenate((V[:, ~duplicates], fxv), axis=1)
         else:
-            V = np.concatenate((V[:, ~duplicates], v, -v), axis=1)
-    return V, fx, dup
+            V = np.concatenate((V[:, ~duplicates], fxv, -fxv), axis=1)
+    return V, fx, dup, fxv
 
 def get_test_points():
     """
