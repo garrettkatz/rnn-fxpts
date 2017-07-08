@@ -178,15 +178,14 @@ def mini_compare():
 def main():
 
     while True:
-        N = 3
+        N = 4
         
-        # test_data = fe.generate_test_data(network_sizes=[N], num_samples=[1], refine_iters = 1)
-        # c = None
-        # W = test_data['N_%d_W_0'%N]
-        # V = test_data['N_%d_V_0'%N]
+        test_data = fe.generate_test_data(network_sizes=[N], num_samples=[1], refine_iters = 1)
+        c = None
+        W = test_data['N_%d_W_0'%N]
         
-        dat = fe.load_npz_file('bad_combo.npz')
-        W, c = dat['W'], dat['c']
+        # dat = fe.load_npz_file('bad_combo.npz')
+        # W, c = dat['W'], dat['c']
         
         timeout = 500
         term_ratio = 2
@@ -200,7 +199,7 @@ def main():
             if i == len(traversal)-1 or traversal[i] != traversal[i+1]:
                 print(traversal[i],status[i])
                 end_status.append(status[i])
-                if (len(end_status) > 1 and end_status[-1] == 'Success') or (len(end_status) == 1 and end_status[-1] != 'Success') or (len(end_status) > 2 and N == 3):
+                if (len(end_status) > 1 and end_status[-1] == 'Success') or (len(end_status) == 1 and end_status[-1] == 'Closed loop detected'): # or (len(end_status) > 2 and N == 3):
                     bad_t = traversal[i]
                     bad_i = i
                     bad_status = True
@@ -218,8 +217,8 @@ def main():
     else: ax = plt.gca()
     ptr.plot(ax,np.concatenate(VA[0],axis=1)[:N,:],'ko-')
     # ptr.plot(ax,np.concatenate(VA[bad_t],axis=1)[:N,:],'go-')
-    ptr.plot(ax,np.concatenate(VA[1],axis=1)[:N,:],'go-')
-    ptr.plot(ax,np.concatenate(VA[2],axis=1)[:N,:],'mo-')
+    # ptr.plot(ax,np.concatenate(VA[1],axis=1)[:N,:],'go-')
+    # ptr.plot(ax,np.concatenate(VA[2],axis=1)[:N,:],'mo-')
     for p in range(len(VA_cp)):
         ptr.plot(ax, np.concatenate((VA_cp[p][:N,:],V_rp[p]),axis=1),'-b')
         ptr.plot(ax,V_rp[p],'b.')
