@@ -19,6 +19,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.markers as mrk
+import matplotlib.lines as lns
 import plotter as ptr
 import rnn_fxpts as rfx
 import pickle as pkl
@@ -1079,6 +1080,64 @@ def show_tvb_work(test_data_ids):
     plt.tight_layout()
     plt.show()
     return res
+
+def show_tvb_work_corr(test_data_ids):
+    """
+    Plot run time against number of fixed points found
+    test_data_ids should be the list of ids, each as in generate_test_data (without file extension)    
+    """
+    mpl.rcParams['mathtext.default'] = 'regular'
+    # mpl.rcParams.update({'figure.autolayout': True})
+    mpl.rcParams.update({'font.size': 12})
+    mpl.rcParams['pdf.fonttype'] = 42
+    mpl.rcParams['ps.fonttype'] = 42
+
+    Ns = [8,16,24,64,128,256,1024]
+    Cs = np.linspace(0.7,0.0,len(Ns))#[.9,.8,.7,.6,.5,.4,.3,.2,.1]
+
+    t_res, b_res, res = [], [], []
+    for test_data_id in test_data_ids:
+        t_res += load_pkl_file('results/traverse_%s.pkl'%test_data_id)
+        b_res += load_pkl_file('results/baseline_%s.pkl'%test_data_id)
+        res += load_pkl_file('results/tvb_%s.pkl'%test_data_id)
+    t_res = [r for r in t_res if r['N'] in Ns]
+    b_res = [r for r in b_res if r['N'] in Ns]
+    res = [r for r in res if r['N'] in Ns]
+
+    for r in range(len(res)):
+        # result_key = 'TvB_%s_N_%d_s_%d'%(test_data_id, N, s)
+        result_key = res[r]['result_key'][4:]
+        for method_key in ['traverse','baseline']:
+            mres = load_pkl_file('results/%s_%s.pkl'%(method_key,result_key))
+            res[r][method_key+'_runtime'] = mres['runtime']
+            res[r][method_key+'_post_runtime'] = mres['post_runtime']
+
+    i = 0
+    marks = {'traverse':'+','baseline':'o'}
+    for N in Ns:
+        y_sum, x_max = 0, 0
+        for method_key in ['traverse','baseline']:
+            runtimes = [(r['%s_runtime'%method_key]+r['%s_post_runtime'%method_key])/60 for r in res if r['N']==N]
+            runtimes = np.log(runtimes)
+            counts = [r[method_key[0].upper()] for r in res if r['N']==N]
+            counts = np.log(counts)
+            dat = np.array([counts,runtimes])
+            marker = marks[method_key]
+            # c_lo, c_hi = 0.0, 1.0
+            # color = c_lo + (c_hi-c_lo)*(1.0*np.log(N)-min(np.log(Ns)))/(1.0*max(np.log(Ns))-min(np.log(Ns)))
+            color = Cs[i]
+            print(color)
+            ptr.scatter(plt.gca(), dat, marker=marker,edgecolors=color*np.ones((1,3)),c='none',s=50)
+            x_max = max(x_max, dat[0,:].max())
+            y_sum += dat[1,:].mean()
+        ptr.text(plt.gca(), np.array([[x_max+.2],[y_sum/2]]), ['N=%d'%N])#, color=color*np.ones((1,3)))
+        i += 1
+    
+    plt.legend(handles=[
+        lns.Line2D([],[], color='k', marker=marks['traverse'],label='Traverse')
+        lns.Line2D([],[], color='k', marker=marks['baseline'],label='Baseline')
+    ])
+    plt.show()            
 
 def show_tvb_work_split(test_data_ids):
     """
