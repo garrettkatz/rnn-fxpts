@@ -856,9 +856,13 @@ def show_tvb_dist_results(test_data_ids=['full_base','big256_base','big512_base'
         handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist_v'] for r in results]),'^','k',log=log,logmin=2**-5))
         handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist_v'] for r in results]),'^','none',log=log,logmin=2**-5))
         if sp==1:
-            plt.legend(handles, ['$||T - mean(T)||$','$||B - mean(B)||$','$||T - sign(T)||$','$||B - sign(B)||$'], loc='upper left',fontsize=12)
+            # plt.legend(handles, ['$||T - mean(T)||$','$||B - mean(B)||$','$||T - sign(T)||$','$||B - sign(B)||$'], loc='upper left',fontsize=12)
+            plt.legend(handles, ['$avg_{v\in T}||v - avg_{\overline{v}\in T}(\overline{v})||$','$avg_{v\in B}||v - avg_{\overline{v}\in B}(\overline{v})||$','$avg_{v\in T}||v - sign(v)||$','$avg_{v\in B}||v - sign(v)||$'], loc='upper left',fontsize=12)
         # plt.xlim([uNs[0]-1,uNs[-1]+1])
-        plt.xlim([2**(np.log2(uNs[0])-.5),2**(np.log2(uNs[-1])+.5)])
+        if sp==1:
+            plt.xlim([2**(np.log2(uNs[0])-2.75),2**(np.log2(uNs[-1])+.5)])
+        else:
+            plt.xlim([2**(np.log2(uNs[0])-.5),2**(np.log2(uNs[-1])+.5)])
         # if sp==1:
         #     plt.xlim([2**(np.log2(2)-.5),2**(np.log2(128)+.5)])
         # if sp==2:
@@ -1065,7 +1069,7 @@ def show_tvb_work(test_data_ids):
         # handles.append(scatter_with_errors(Ns, uNs, [r['baseline_runtime']/r['B']/60 for r in res], 'x','none'))
         handles.append(scatter_with_errors(Ns, uNs, [(r['traverse_runtime']+r['traverse_post_runtime'])/r['T']/60 for r in res], '^','none'))
     # plt.legend(handles, ['B with post-processing','B no post-processing','T with post-processing'], loc='upper left')
-    plt.legend(handles, ['B','T'], loc='upper left')
+    plt.legend(handles, ['Baseline','Traverse'], loc='upper left')
     # plt.xlim([uNs[0]-1,uNs[-1]+1])
     plt.xlim([2**.5,1.5*uNs[-1]])
     plt.gca().set_xscale('log',basex=2)
@@ -1092,8 +1096,10 @@ def show_tvb_work_corr(test_data_ids):
     mpl.rcParams['pdf.fonttype'] = 42
     mpl.rcParams['ps.fonttype'] = 42
 
-    Ns = [8,16,24,64,128,256,1024]
-    Cs = np.linspace(0.7,0.0,len(Ns))#[.9,.8,.7,.6,.5,.4,.3,.2,.1]
+    Ns = [8,16,32,64,128,256,1024]
+    # Cs = np.linspace(0.7,0.0,len(Ns))#[.9,.8,.7,.6,.5,.4,.3,.2,.1]
+    # Cs = 0.0 + 0.5*np.mod(np.arange(len(Ns)),3)/2
+    Cs = 0.0 + 0.4*np.mod(np.arange(len(Ns)),2)/1
 
     t_res, b_res, res = [], [], []
     for test_data_id in test_data_ids:
@@ -1112,31 +1118,46 @@ def show_tvb_work_corr(test_data_ids):
             res[r][method_key+'_runtime'] = mres['runtime']
             res[r][method_key+'_post_runtime'] = mres['post_runtime']
 
+    plt.figure(figsize=(8,3.3))
+    plt.axes([.1, .15, .85, .8])
+
     i = 0
-    marks = {'traverse':'+','baseline':'o'}
+    kwargs = {'traverse': dict(marker='+',c='k'),'baseline':dict(marker='o',c='none')}
     for N in Ns:
         y_sum, x_max = 0, 0
-        for method_key in ['traverse','baseline']:
+        for method_key in ['baseline','traverse']:
             runtimes = [(r['%s_runtime'%method_key]+r['%s_post_runtime'%method_key])/60 for r in res if r['N']==N]
-            runtimes = np.log(runtimes)
+            runtimes = np.log2(runtimes)
             counts = [r[method_key[0].upper()] for r in res if r['N']==N]
-            counts = np.log(counts)
+            counts = np.log2(counts)
             dat = np.array([counts,runtimes])
-            marker = marks[method_key]
+            # marker = marks[method_key]
             # c_lo, c_hi = 0.0, 1.0
             # color = c_lo + (c_hi-c_lo)*(1.0*np.log(N)-min(np.log(Ns)))/(1.0*max(np.log(Ns))-min(np.log(Ns)))
             color = Cs[i]
             print(color)
-            ptr.scatter(plt.gca(), dat, marker=marker,edgecolors=color*np.ones((1,3)),c='none',s=50)
+            if method_key == 'traverse':
+                kwargs[method_key]['c'] = color*np.ones((1,3))
+                ptr.scatter(plt.gca(), dat, s=50, **kwargs[method_key])
+            else:
+                ptr.scatter(plt.gca(), dat, s=50,edgecolors=(color+.25)*np.ones((1,3)), **kwargs[method_key])
             x_max = max(x_max, dat[0,:].max())
             y_sum += dat[1,:].mean()
-        ptr.text(plt.gca(), np.array([[x_max+.2],[y_sum/2]]), ['N=%d'%N])#, color=color*np.ones((1,3)))
+        ptr.text(plt.gca(), np.array([[x_max+.2],[y_sum/2]]), ['N=%d'%N], color=color*np.ones((3,)))
         i += 1
     
     plt.legend(handles=[
-        lns.Line2D([],[], color='k', marker=marks['traverse'],label='Traverse')
-        lns.Line2D([],[], color='k', marker=marks['baseline'],label='Baseline')
-    ])
+        lns.Line2D([0],[0], color='k', marker=kwargs['traverse']['marker'],linewidth=0,label='Traverse'),
+        lns.Line2D([0],[0], color='none', marker=kwargs['baseline']['marker'],linewidth=0,label='Baseline'),
+    ], loc='lower left')
+    
+    plt.xticks(range(-2,15,2),['$2^{%d}$'%xl for xl in range(-2,15,2)])
+    plt.xlim([-2,14])
+    plt.xlabel('Number of fixed points found')
+    plt.yticks(range(-10,16,5),['$2^{%d}$'%yl for yl in range(-10,16,5)])
+    plt.ylim([-10,15])
+    plt.ylabel('Run time of solver (minutes)')
+    # plt.tight_layout()
     plt.show()            
 
 def show_tvb_work_split(test_data_ids):
@@ -1200,7 +1221,7 @@ def show_tvb_work_split(test_data_ids):
             # handles.append(scatter_with_errors(Ns, uNs, [r['baseline_runtime']/r['B']/60 for r in res], 'x','none'))
             handles.append(scatter_with_errors(Ns, uNs, [(r['traverse_runtime']+r['traverse_post_runtime'])/r['T']/60 for r in res], '^','none'))
         # plt.legend(handles, ['B with post-processing','B no post-processing','T with post-processing'], loc='upper left')
-        if sp == 1: plt.legend(handles, ['B','T'], loc='upper left')
+        if sp == 1: plt.legend(handles, ['Baseline','Traverse'], loc='upper left')
         # plt.xlim([uNs[0]-1,uNs[-1]+1])
         # plt.xlim([2**.5,1.5*uNs[-1]])
         plt.xlim([2**(np.log2(uNs[0])-.5),2**(np.log2(uNs[-1])+.5)])
@@ -1266,22 +1287,24 @@ def show_Wc_results(test_data_id='full_choose'):
     Ns = np.array([r[0]['N'] for r in results])
     uNs = np.unique(Ns)
     handles = []
-    plt.figure(figsize=(8,3.75))
+    plt.figure(figsize=(8,3.5))
     y = [max(r[0]['num_fxV_union'],0.5) for r in results]
     handles.append(scatter_with_errors(Ns, uNs, y, 'o','k',log=True,logmin=.5))
     for (fun, m,fc) in [(np.max,'^','none'),(np.mean,'d','k',),(np.min,'v','none')]:
         y = [max(fun([r['num_fxV_unique'] for r in res]),0.5) for res in results]
         handles.append(scatter_with_errors(Ns, uNs, y,m,fc,log=True,logmin=0.5))
-    handles.append(plt.plot(uNs, np.log2(uNs), 'dk--')[0])
-    plt.legend(handles, ['Union','Max','Mean','Min','Known'], loc='upper left',fontsize=13)
+    handles.append(plt.plot(uNs, np.log2(uNs), 'k--')[0])
+    # plt.legend(handles, ['Union','Max','Mean','Min','Known'], loc='upper left',fontsize=13)
+    plt.legend(handles[:-1], ['$avg_W|\cup_c T(W,c)|$','$avg_W max_c|T(W,c)|$','$avg_W avg_c|T(W,c)|$','$avg_W min_c|T(W,c)|$'], loc='upper left',fontsize=13)
     plt.xlim([uNs[0]-.5,uNs[-1]+.5])
     plt.ylabel('# of fixed points')
     #plt.title('Different Regular Regions')
     # plt.draw()
     # ytick_labels = plt.gca().get_yticklabels()
     # plt.gca().set_yticklabels(['2^%s'%(yl.get_text()) for yl in ytick_labels])
-    plt.yticks(range(0,11,1),['$2^{%d}$'%yl for yl in range(0,11,1)])
-    plt.ylim([0.5,9])
+    plt.yticks(range(1,11,1),['$2^{%d}$'%yl for yl in range(1,11,1)])
+    plt.ylim([1,9])
+    plt.xlim([0,10.5])
     plt.tight_layout()
     plt.show()
 
