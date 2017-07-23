@@ -818,17 +818,15 @@ def show_tvb_dist_results(test_data_ids=['full_base','big256_base','big512_base'
     test_data_ids should be the list of ids, each as in generate_test_data (without file extension)
     """
     mpl.rcParams['mathtext.default'] = 'regular'
-    # mpl.rcParams.update({'figure.autolayout': True})
     mpl.rcParams.update({'font.size': 12})
     mpl.rcParams['pdf.fonttype'] = 42
     mpl.rcParams['ps.fonttype'] = 42
+    
     results = []
     plt.figure(figsize=(8,2.65))
     sp = 0
     for test_data_id in test_data_ids:
-        # results += load_pkl_file('results/tvb_dist_%s.pkl'%test_data_id)
         results += load_pkl_file('results/tvb_%s.pkl'%test_data_id)
-        # results = load_pkl_file('results/tvb_%s.pkl'%test_data_id)
     results = [r for r in results if r['N'] in [2,4,7,10,13,16,24,32,48,64,128,256,512,1024]]
     N_cut = 128
     split_results = [[r for r in results if r['N'] <= N_cut], [r for r in results if r['N'] > N_cut]]
@@ -840,49 +838,33 @@ def show_tvb_dist_results(test_data_ids=['full_base','big256_base','big512_base'
         log = False
         logmin=2**-5
         sp += 1
-        # plt.subplot(1,2,sp)
         if sp==1:
             plt.axes([.1, .2, .6, .7])
-        # else:
         if sp==2:
             plt.axes([.75, .2, .225, .7])
-        # handles.append(scatter_with_errors(Ns, uNs, np.array([r['mean_dist'] for r in results])))
         handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist'] for r in results]), 'o','k',log=log,logmin=2**-5))
         handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist'] for r in results]), 'o','none',log=log,logmin=2**-5))
-        # handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist_p'] for r in results]),'^'))
-        # handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist_p'] for r in results]),'v'))
-        # handles.append(scatter_with_errors(Ns, uNs, np.array([r['mean_dist_p'] for r in results]), 'd')) # accidental tuple
-        # plt.legend(handles, ['$||T - T_{mean}||$','$||B - B_{mean}||$','$||T^{+} - T^{+}_{mean}||$','$||B^{+} - B^{+}_{mean}||$','$||T^{+}_{mean} - B^{+}_{mean}||$'], loc='upper left')
         handles.append(scatter_with_errors(Ns, uNs, np.array([r['traverse_dist_v'] for r in results]),'^','k',log=log,logmin=2**-5))
         handles.append(scatter_with_errors(Ns, uNs, np.array([r['baseline_dist_v'] for r in results]),'^','none',log=log,logmin=2**-5))
         if sp==1:
-            # plt.legend(handles, ['$||T - mean(T)||$','$||B - mean(B)||$','$||T - sign(T)||$','$||B - sign(B)||$'], loc='upper left',fontsize=12)
-            plt.legend(handles, ['$avg_{v\in T}||v - avg_{\overline{v}\in T}(\overline{v})||$','$avg_{v\in B}||v - avg_{\overline{v}\in B}(\overline{v})||$','$avg_{v\in T}||v - sign(v)||$','$avg_{v\in B}||v - sign(v)||$'], loc='upper left',fontsize=12)
-        # plt.xlim([uNs[0]-1,uNs[-1]+1])
+            # plt.legend(handles, ['$avg_{v\in T}||v - avg_{\overline{v}\in T}(\overline{v})||$','$avg_{v\in B}||v - avg_{\overline{v}\in B}(\overline{v})||$','$avg_{v\in T}||v - sign(v)||$','$avg_{v\in B}||v - sign(v)||$'], loc='upper left',fontsize=12)
+            lgd = plt.legend(handles, ['$avg_{v\,\,\,\,\, T}||v - avg_{\overline{v}\,\,\,\,\,\, T}(\overline{v})||$','$avg_{v\,\,\,\,\, B}||v - avg_{\overline{v}\,\,\,\,\,\, B}(\overline{v})||$','$avg_{v\,\,\,\,\, T}||v - sign(v)||$','$avg_{v\,\,\,\,\, B}||v - sign(v)||$'], loc='upper left',fontsize=12)
+            zord = lgd.get_zorder()+1
+            eps = lambda sx,x,y: plt.plot(x+sx*np.array([0,-.45,-.6,-.6,0,-.6,-.6,-.45,0]),y+np.array([-.2,-.2,-.1,0,0,0,.1,.2,.2]),'-k',zorder=zord)
+            for ey in np.linspace(5.25,10.25,4): eps(.125,1.25,ey)
+            for ey in np.linspace(8.5,10.25,2): eps(.5,4.25,ey)
         if sp==1:
             plt.xlim([2**(np.log2(uNs[0])-2.75),2**(np.log2(uNs[-1])+.5)])
         else:
             plt.xlim([2**(np.log2(uNs[0])-.5),2**(np.log2(uNs[-1])+.5)])
-        # if sp==1:
-        #     plt.xlim([2**(np.log2(2)-.5),2**(np.log2(128)+.5)])
-        # if sp==2:
-        #     plt.xlim([2**(np.log2(256)-.5),2**(np.log2(512)+.5)])
         plt.xlabel('N')
         plt.gca().set_xscale('log',basex=2)
-        # plt.ylim([-5,5])
-        # plt.yticks(range(-5,5,2),['$2^{%d}$'%yl for yl in range(-5,5,2)])
         if sp==1: plt.ylabel('Average distances')
-        #plt.title('Traverse vs Baseline')
-        # plt.draw()
-        # ytick_labels = plt.gca().get_yticklabels()
-        # plt.gca().set_yticklabels(['2^%s'%(yl.get_text()) for yl in ytick_labels])
-        # plt.yticks(range(-1,15,2),['0']+['$2^{%d}$'%yl for yl in range(1,15,2)])
-    # plt.tight_layout()
+
     plt.show()
 
 def show_tvb_stab_result(test_data_id='full_base', N=24, s=0):
     mpl.rcParams['mathtext.default'] = 'regular'
-    # mpl.rcParams.update({'figure.autolayout': True})
     mpl.rcParams.update({'font.size': 16})
     mpl.rcParams['pdf.fonttype'] = 42
     mpl.rcParams['ps.fonttype'] = 42
@@ -1091,14 +1073,11 @@ def show_tvb_work_corr(test_data_ids):
     test_data_ids should be the list of ids, each as in generate_test_data (without file extension)    
     """
     mpl.rcParams['mathtext.default'] = 'regular'
-    # mpl.rcParams.update({'figure.autolayout': True})
     mpl.rcParams.update({'font.size': 12})
     mpl.rcParams['pdf.fonttype'] = 42
     mpl.rcParams['ps.fonttype'] = 42
 
     Ns = [8,16,32,64,128,256,1024]
-    # Cs = np.linspace(0.7,0.0,len(Ns))#[.9,.8,.7,.6,.5,.4,.3,.2,.1]
-    # Cs = 0.0 + 0.5*np.mod(np.arange(len(Ns)),3)/2
     Cs = 0.0 + 0.4*np.mod(np.arange(len(Ns)),2)/1
 
     t_res, b_res, res = [], [], []
@@ -1295,7 +1274,10 @@ def show_Wc_results(test_data_id='full_choose'):
         handles.append(scatter_with_errors(Ns, uNs, y,m,fc,log=True,logmin=0.5))
     handles.append(plt.plot(uNs, np.log2(uNs), 'k--')[0])
     # plt.legend(handles, ['Union','Max','Mean','Min','Known'], loc='upper left',fontsize=13)
-    plt.legend(handles[:-1], ['$avg_W|\cup_c T(W,c)|$','$avg_W max_c|T(W,c)|$','$avg_W avg_c|T(W,c)|$','$avg_W min_c|T(W,c)|$'], loc='upper left',fontsize=13)
+    # plt.legend(handles[:-1], ['$avg_W|\cup_c T(W,c)|$','$avg_W max_c|T(W,c)|$','$avg_W avg_c|T(W,c)|$','$avg_W min_c|T(W,c)|$'], loc='upper left',fontsize=13)
+    lgd = plt.legend(handles[:-1], ['$avg_W|\,\,\,\,\,\, _c T(W,c)|$','$avg_W max_c|T(W,c)|$','$avg_W avg_c|T(W,c)|$','$avg_W min_c|T(W,c)|$'], loc='upper left',fontsize=13)
+    zord = lgd.get_zorder()+1
+    plt.plot(1.925+.4*np.array([-.2,-.2,-.1,.1,.2,.2]),8.35+.6*np.array([0,-.45,-.6,-.6,-.45,0]),'-k',zorder=zord)
     plt.xlim([uNs[0]-.5,uNs[-1]+.5])
     plt.ylabel('# of fixed points')
     #plt.title('Different Regular Regions')
