@@ -1,3 +1,7 @@
+direct test single c hypothesis
+    combo to get all components
+    keep repeating until a c is found with single component (timeouts are inconclusive, but no timeouts would be good)
+    repeat that on a bunch of networks, then a bunch of Ns
 combo_trial should group all outputs by traversal, not by individual iterate
 better term ratio: use time elapsed between last and second-to-last fixed point found
 make optional to refine in ge.process_point?
