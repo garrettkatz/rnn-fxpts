@@ -178,7 +178,7 @@ def mini_compare():
 def main():
 
     while True:
-        N = 4
+        N = 2
         
         test_data = fe.generate_test_data(network_sizes=[N], num_samples=[1], refine_iters = 1)
         c = None
@@ -190,7 +190,7 @@ def main():
         timeout = 500
         term_ratio = 2
         start = time.clock()
-        V, timestamp, traversal, c, status, VA, seed, VA_cp, V_rp, step_sizes = combo_trial(W, c=c, timeout=timeout, term_ratio=term_ratio, max_step_size=None)
+        V, timestamp, traversal, c, status, VA, seed, VA_cp, V_rp, step_sizes = combo_trial(W, c=c, timeout=timeout, term_ratio=term_ratio, max_step_size=0.05)
         end_status = []
         bad_status = False
         bad_t = 0
@@ -206,8 +206,60 @@ def main():
                     if bad_status: break
         print('%d fxpts, %d components, took %f of %f seconds'%(V[-1].shape[1], traversal[-1]+1, time.clock()-start, timeout))
         if bad_status: break
+        break # lork check
 
-    fe.save_npz_file('bad_combo.npz', W=W, c=c)
+    if bad_status: fe.save_npz_file('bad_combo.npz', W=W, c=c)
+
+    # Check alpha dot 0 lork:
+    # Get each local maximum of |alpha|
+    # At that that (v,alpha), check proximity to each hump:
+    # i^th "hump" at W_i v = k, where tanh'(k) = W_ii/|W_i|^2.
+    # tanh'(k) = 1 - tanh(k)**2
+    # k = arctanh((1 - tanh'(k))**.5)
+    # *******conclusions so far: often appear correct or nearly so, but even in 2D, sometimes just doesn't look quite right.  local extrema slightly displaced from humps.
+    humps = np.flatnonzero(np.diag(W) > 1)
+    k = np.arctanh((1 - np.diag(W)/(W**2).sum(axis=1))**.5)[humps,np.newaxis]
+    print('k:')
+    print(k.flat[:])
+
+    # if N == 3: ax = plt.gca(projection='3d')
+    # else: ax = plt.gca()
+    ax=plt.gca(projection='3d')
+    
+    for t in range(len(VA)):
+        VA_t = np.concatenate(VA[t],axis=1)
+        A = VA_t[N,:]
+        extrema = 1 + np.flatnonzero((A[1:-1]-A[:-2])*(A[1:-1]-A[2:]) > 0)
+        K = W[humps,:].dot(VA_t[:N,extrema+0])
+        d = (np.fabs(np.fabs(K)-k)/(W[humps,:]**2).sum(axis=1)[:,np.newaxis]).min(axis=0)
+        K_m = W[humps,:].dot(VA_t[:N,extrema-1])
+        d_m = (np.fabs(np.fabs(K_m)-k)/(W[humps,:]**2).sum(axis=1)[:,np.newaxis]).min(axis=0)
+        K_p = W[humps,:].dot(VA_t[:N,extrema+1])
+        d_p = (np.fabs(np.fabs(K_p)-k)/(W[humps,:]**2).sum(axis=1)[:,np.newaxis]).min(axis=0)
+        print('t=%d:'%t)
+        print('||K|-k|/|W_i|^2 (-1,0,1):')
+        np.set_printoptions(linewidth=1000)
+        print(d_m[:5])
+        print(d[:5])
+        print(d_p[:5])
+        ptr.plot(ax,VA_t[:N,:],'k.-')
+        ptr.plot(ax,VA_t[:N,extrema],'ro')
+        ptr.plot(ax,VA_t[:,:],'k.-')
+        ptr.plot(ax,VA_t[:,extrema],'ro')
+        w = W[humps,:]/(W[humps,:]**2).sum(axis=1)[:,np.newaxis]
+        for h in range(len(humps)):
+            owh = np.array([[-w[h,1],w[h,0]]])
+            owh = 2 * owh/((owh**2).sum())**.5
+            ptr.plot(ax, (+w[[h],:]*k[h] + np.array([[-1],[1]])*owh).T,'g-')
+            ptr.plot(ax, (-w[[h],:]*k[h] + np.array([[-1],[1]])*owh).T,'g-')
+
+    ptr.set_lims(ax, 2*np.ones((3,1))*np.array([-1, 1]))
+    ax.set_aspect('equal')
+    plt.show()
+    raw_input('.')
+
+
+    return # lork check
 
     # print(V[-1][:,np.argsort(np.fabs(V[-1]).max(axis=0))[:5]])
     plt.ion()
@@ -215,10 +267,12 @@ def main():
     print('\a') # beep
     if N == 3: ax = plt.gca(projection='3d')
     else: ax = plt.gca()
-    ptr.plot(ax,np.concatenate(VA[0],axis=1)[:N,:],'ko-')
-    # ptr.plot(ax,np.concatenate(VA[bad_t],axis=1)[:N,:],'go-')
-    # ptr.plot(ax,np.concatenate(VA[1],axis=1)[:N,:],'go-')
-    # ptr.plot(ax,np.concatenate(VA[2],axis=1)[:N,:],'mo-')
+    for t in range(len(VA)):
+        ptr.plot(ax,np.concatenate(VA[t],axis=1)[:N,:],'ko-') 
+    # ptr.plot(ax,np.concatenate(VA[0],axis=1)[:N,:],'ko-')
+    # # ptr.plot(ax,np.concatenate(VA[bad_t],axis=1)[:N,:],'go-')
+    # # ptr.plot(ax,np.concatenate(VA[1],axis=1)[:N,:],'go-')
+    # # ptr.plot(ax,np.concatenate(VA[2],axis=1)[:N,:],'mo-')
     for p in range(len(VA_cp)):
         ptr.plot(ax, np.concatenate((VA_cp[p][:N,:],V_rp[p]),axis=1),'-b')
         ptr.plot(ax,V_rp[p],'b.')
