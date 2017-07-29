@@ -1,11 +1,3 @@
-bad_miss.png:
-shows that sign change will not necessarily happen at local alpha min when discrete steps
-better with both checks: sign change OR local alpha min
-ideally, be able to prove at most one fixed point will be passed during a step
-even more so, that region of convergence to any fixed point with NR fiber steps wont be overstepped
-
-Preliminary idea: Test empirically if alpha dot = 0 always occurs at a hump for at least one i
-humps: W_i v = k, where tanh'(k) = W_ii/|W_i|^2.
 combo_trial should group all outputs by traversal, not by individual iterate
 better term ratio: use time elapsed between last and second-to-last fixed point found
 make optional to refine in ge.process_point?
@@ -19,6 +11,16 @@ things to plot:
     example histogram # of points per disconnected component
     average # of points per disconnected component over N
     everything 3d fxpt
+
+
+bad_miss.png:
+shows that sign change will not necessarily happen at local alpha min when discrete steps
+better with both checks: sign change OR local alpha min
+ideally, be able to prove at most one fixed point will be passed during a step
+even more so, that region of convergence to any fixed point with NR fiber steps wont be overstepped
+Preliminary idea: Test empirically if alpha dot = 0 always occurs at a hump for at least one i
+humps: W_i v = k, where tanh'(k) = W_ii/|W_i|^2.
+
 
 3d fxpt:
     Grid sampling of each W_ij in [-A,A] with A > 1.  So r^9 where r is the sampling rate.
