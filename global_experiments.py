@@ -62,7 +62,7 @@ def fiber_trial(W, timeout = .1, repeats = None):
         VA.append(iterate[2])
     return V, timestamp, traversal, c, status, VA
 
-def combo_trial(W, c=None, timeout=1, term_ratio=None, max_step_size=None):
+def combo_trial(W, c=None, timeout=1, term_ratio=None, max_step_size=None, verbose_prefix = None):
     """
     Run a solver trial using combined local search and fiber traversal
     Repeats traversal with the same c but different initial fixed points until timeout
@@ -106,8 +106,10 @@ def combo_trial(W, c=None, timeout=1, term_ratio=None, max_step_size=None):
     step_sizes = [iterate[4]]
     seed = [np.zeros((W.shape[0],1))]
     c = iterate[3] # Same c for subsequent traversals
+    if verbose_prefix is not None: print('%scomponent 1...'%verbose_prefix)
     # Do non-origin components with local seeds
     seeds = rfx.local_search(W, stop_time=stop_time)
+    num_components = 1
     for seed_status, fxv, _ in seeds:
         # check if timed out
         if seed_status == 'Timed out': break
@@ -134,6 +136,8 @@ def combo_trial(W, c=None, timeout=1, term_ratio=None, max_step_size=None):
             status.append(iterate[0])
         VA.append(iterate[2])
         step_sizes.append(iterate[4])
+        num_components += 1
+        if verbose_prefix is not None: print('%scomponent %d...'%(verbose_prefix, num_components))
     return V, timestamp, traversal, c, status, VA, seed, VA_cp, V_rp, step_sizes
 
 def mini_compare():
@@ -175,7 +179,7 @@ def mini_compare():
     # ptr.plot(ax,V[-1],'r.')    
     # plt.show()
 
-def main():
+def combo_checks():
 
     while True:
         N = 2
@@ -285,6 +289,38 @@ def main():
     plt.plot(np.array(step_sizes[bad_t]).cumsum(), np.zeros(len(step_sizes[bad_t])))
     plt.show()
     raw_input('.')
-    
+
+def single_c_search():
+
+    N = 5
+    samples = []
+    while True:
+        
+        test_data = fe.generate_test_data(network_sizes=[N], num_samples=[1], refine_iters = 1)
+        W = test_data['N_%d_W_0'%N]
+        timeout = 60*60
+        term_ratio = 2
+
+        num_c = 0
+        num_fx = None
+        while True:
+        
+            c = None
+            start = time.clock()
+            V, timestamp, traversal, c, status, VA, seed, VA_cp, V_rp, step_sizes = combo_trial(W, c=c, timeout=timeout, term_ratio=term_ratio, max_step_size=0.05, verbose_prefix = '  ')
+            num_c += 1
+            
+            
+            print(' %d^th c: %d fxpts, %d components, took %f of %f seconds'%(num_c, V[-1].shape[1], traversal[-1]+1, time.clock()-start, timeout))
+            
+            if num_fx is None: num_fx = V[-1].shape[1]
+            if not V[-1].shape[1] == num_fx:
+                print('\a')
+                raw_input('oh no...')
+
+            if len(VA) == 1: break
+            
+        print('Found fully connected after %d c\'s'%num_c)
+        
 if __name__=='__main__':
-    main()
+    single_c_search()
