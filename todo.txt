@@ -2,9 +2,16 @@ direct test single c hypothesis
     combo to get all components
     keep repeating until a c is found with single component (timeouts are inconclusive, but no timeouts would be good)
     repeat that on a bunch of networks, then a bunch of Ns
+    this needs more work.  Need a watertight way to be confident all components have been found
 combo_trial should group all outputs by traversal, not by individual iterate
 better term ratio: use time elapsed between last and second-to-last fixed point found
 make optional to refine in ge.process_point?
+
+look for the "eigenvectors" of the dynamics: vectors v where f(v) = \lambda * v.  Fixed points are a special case.
+
+fantasies:
+c at these eigenvectors are fully connected
+the sets of these eigenvectors have some duality principle to the directional fibers used in some sort of linear/semidefinite programming -like optimization
 
 things to plot:
     example absolute for local, fiber, combo over time
