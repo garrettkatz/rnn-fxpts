@@ -142,12 +142,12 @@ def combo_trial(W, c=None, timeout=1, term_ratio=None, max_step_size=None, verbo
 
 def mini_compare():
 
-    N = 6
+    N = 24
     test_data = fe.generate_test_data(network_sizes=[N], num_samples=[1], refine_iters = 1)
     W = test_data['N_%d_W_0'%N]
     V = test_data['N_%d_V_0'%N]
 
-    timeout = 5
+    timeout = 60
     results = {}
     results['local'] = local_trial(W, timeout=timeout)
     results['fiber'] = fiber_trial(W, timeout=timeout)
@@ -159,10 +159,12 @@ def mini_compare():
 
     keys = results.keys()
     for k in keys:
-        V_k = results[k][0]
-        T_k = results[k][1]
+        V_k = results[k][0] # V[i][:,p] = p^th point found after i^th iterate
+        T_k = results[k][1] # timestamp[i] = clock time after i^th iterate
         plt.plot([T_ki - T_k[0] for T_ki in T_k], [V_ki.shape[1] for V_ki in V_k])
     plt.plot([0,timeout], 2*[U.shape[1]])
+    plt.xlabel('Time elapsed')
+    plt.ylabel('# fixed points found')
     plt.legend(keys + ['union'],loc='lower right')
     plt.show()
 

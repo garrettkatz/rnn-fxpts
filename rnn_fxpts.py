@@ -40,7 +40,37 @@ def solve(A, B):
     Returns x, where x solves Ax = B.
     Assumes A is invertible.
     """
-    return np.linalg.solve(A,B)
+    # return np.linalg.solve(A,B)
+
+    # shortened code from numpy source for np.linalg.solve:
+    # a, _ = _makearray(a)
+    # _assertRankAtLeast2(a)
+    # _assertNdSquareness(a)
+    # b, wrap = _makearray(b)
+    # t, result_t = _commonType(a, b)
+
+    # We use the b = (..., M,) logic, only if the number of extra dimensions
+    # match exactly
+    # if b.ndim == a.ndim - 1:
+    #     gufunc = _umath_linalg.solve1
+    # else:
+    #     gufunc = _umath_linalg.solve
+
+    # signature = 'DD->D' if isComplexType(t) else 'dd->d'
+    # extobj = get_linalg_error_extobj(_raise_linalgerror_singular)
+    # r = gufunc(a, b, signature=signature, extobj=extobj)
+
+    # return wrap(r.astype(result_t, copy=False))
+    
+    a, _ = np.linalg.linalg._makearray(A)
+    b, wrap = np.linalg.linalg._makearray(B)
+    signature = 'dd->d'
+    extobj = np.linalg.linalg.get_linalg_error_extobj(np.linalg.linalg._raise_linalgerror_singular)
+    if b.ndim == a.ndim - 1:
+        r = np.linalg.linalg._umath_linalg.solve1(a, b, signature=signature, extobj=extobj)
+    else:
+        r = np.linalg.linalg._umath_linalg.solve(a, b, signature=signature, extobj=extobj)
+    return wrap(r)
 
 def mrdivide(B,A):
     """
@@ -297,7 +327,8 @@ def s_min_calc(_J_):
     """
     Returns the minimum singular value of numpy.array _J_
     """
-    return np.linalg.norm(_J_, ord=-2)
+    # return np.linalg.norm(_J_, ord=-2)
+    return np.linalg.svd(_J_, compute_uv=0)[-1] # called deep within a code branch of np.linalg.norm
 
 def mu_calc(Wv, delta):
     """
