@@ -12,6 +12,8 @@ import plotter as ptr
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+T2CONST = (np.sqrt(2.)-1.)**2 / np.sqrt(16./27.)
+
 def hardwrite(f,data):
     """
     Force file write to disk
@@ -62,15 +64,14 @@ def solve(A, B):
 
     # return wrap(r.astype(result_t, copy=False))
     
-    a, _ = np.linalg.linalg._makearray(A)
-    b, wrap = np.linalg.linalg._makearray(B)
+    a, b = A, B
     signature = 'dd->d'
     extobj = np.linalg.linalg.get_linalg_error_extobj(np.linalg.linalg._raise_linalgerror_singular)
     if b.ndim == a.ndim - 1:
         r = np.linalg.linalg._umath_linalg.solve1(a, b, signature=signature, extobj=extobj)
     else:
         r = np.linalg.linalg._umath_linalg.solve(a, b, signature=signature, extobj=extobj)
-    return wrap(r)
+    return r
 
 def mrdivide(B,A):
     """
@@ -330,6 +331,13 @@ def s_min_calc(_J_):
     # return np.linalg.norm(_J_, ord=-2)
     return np.linalg.svd(_J_, compute_uv=0)[-1] # called deep within a code branch of np.linalg.norm
 
+def s_max_calc(_J_):
+    """
+    Returns the maximum singular value of numpy.array _J_
+    """
+    # return np.linalg.norm(_J_, ord=2)
+    return np.linalg.svd(_J_, compute_uv=0)[0] # called deep within a code branch of np.linalg.norm
+
 def mu_calc(Wv, delta):
     """
     Calculates the mu function used by Thm. 1 (Katz and Reggia 2017).
@@ -382,6 +390,17 @@ def traverse_step_size(_W_, _Winv_, D, J, va, c, z, num_samples=16):
     theta[~idx] = 1/rho[~idx]
     max_idx = theta.flatten().argmax()
     return theta.flat[max_idx]/np.sqrt((_W_.dot(z)**2).sum()), rho.flat[max_idx], s_min
+
+def traverse_step_size2(W2norm, J, z):
+    """
+    Determines a step size simplier
+    W2norm should be the squared 2-norm of W
+    J should be DF, the Jacobian of F (an N by N+1 numpy.array)
+    z should be the tangent vector (an N+1 by 1 numpy.array)
+    """
+    _J_ = np.concatenate((J, z.T), axis=0)
+    s_min = s_min_calc(_J_)
+    return T2CONST * s_min / W2norm
 
 def take_traverse_step(W, I, c, va, z, step_size, max_nr_iters, nr_tol, verbose=1):
     """
@@ -609,8 +628,11 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
 
     # Constants
     I = np.eye(N)
+    Winv = np.linalg.inv(W)
     _W_, _Winv_ = np.eye(N+1), np.eye(N+1)
-    _W_[:N,:N], _Winv_[:N,:N] = W, np.linalg.inv(W)
+    _W_[:N,:N], _Winv_[:N,:N] = W, Winv
+    W2norm1 = np.linalg.norm(W,ord=2)**2
+    W2norm2 = np.linalg.norm(W,ord=2)*np.linalg.norm(Winv,ord=2)
 
     # Termination criterion
     term = get_term(W, c)
@@ -643,6 +665,9 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
 
         # Get step size
         step_size, rho, s_min = traverse_step_size(_W_, _Winv_, D, J, va, c, z_new)
+        step_size1 = traverse_step_size2(W2norm1, J, z_new)
+        step_size2 = traverse_step_size2(W2norm2, J, z_new) / np.linalg.norm(_W_.dot(z))
+        if (step % 100) == 0: print(step_size, step_size1, step_size2)
         if max_step_size is not None: step_size = min(step_size, max_step_size)
         step_sizes.append(step_size)
         s_mins.append(s_min)
