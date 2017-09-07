@@ -142,12 +142,12 @@ def combo_trial(W, c=None, timeout=1, term_ratio=None, max_step_size=None, verbo
 
 def mini_compare():
 
-    N = 24
+    N = 32
     test_data = fe.generate_test_data(network_sizes=[N], num_samples=[1], refine_iters = 1)
     W = test_data['N_%d_W_0'%N]
     V = test_data['N_%d_V_0'%N]
 
-    timeout = 60
+    timeout = 60*25
     results = {}
     results['local'] = local_trial(W, timeout=timeout)
     results['fiber'] = fiber_trial(W, timeout=timeout)
