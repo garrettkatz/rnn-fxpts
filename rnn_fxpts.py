@@ -401,6 +401,17 @@ def traverse_step_size2(W2norm, J, z):
     _J_ = np.concatenate((J, z.T), axis=0)
     s_min = s_min_calc(_J_)
     return T2CONST * s_min / W2norm
+    
+def traverse_step_size3(mu, J, z):
+    """
+    Determines a step size simplier
+    W2norm should be the squared 2-norm of W
+    J should be DF, the Jacobian of F (an N by N+1 numpy.array)
+    z should be the tangent vector (an N+1 by 1 numpy.array)
+    """
+    _J_ = np.concatenate((J, z.T), axis=0)
+    s_min = s_min_calc(_J_)
+    return s_min / (2. * mu)
 
 def take_traverse_step(W, I, c, va, z, step_size, max_nr_iters, nr_tol, verbose=1):
     """
@@ -633,6 +644,7 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
     _W_[:N,:N], _Winv_[:N,:N] = W, Winv
     W2norm1 = np.linalg.norm(W,ord=2)**2
     W2norm2 = np.linalg.norm(W,ord=2)*np.linalg.norm(Winv,ord=2)
+    mu = np.sqrt(16./27.) * min(np.linalg.norm(W,ord=2), np.sqrt((W*W).sum(axis=1)).max())
 
     # Termination criterion
     term = get_term(W, c)
@@ -665,9 +677,11 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
 
         # Get step size
         step_size, rho, s_min = traverse_step_size(_W_, _Winv_, D, J, va, c, z_new)
-        step_size1 = traverse_step_size2(W2norm1, J, z_new)
-        step_size2 = traverse_step_size2(W2norm2, J, z_new) / np.linalg.norm(_W_.dot(z))
-        if (step % 100) == 0: print(step_size, step_size1, step_size2)
+        # step_size1 = traverse_step_size2(W2norm1, J, z_new)
+        # step_size2 = traverse_step_size2(W2norm2, J, z_new) / np.linalg.norm(_W_.dot(z))
+        step_size3 = traverse_step_size3(mu, J, z_new)
+        # if (step % 100) == 0: print(step_size, step_size1, step_size2, step_size3)
+        if (step % 100) == 0: print(step_size, step_size3)
         if max_step_size is not None: step_size = min(step_size, max_step_size)
         step_sizes.append(step_size)
         s_mins.append(s_min)

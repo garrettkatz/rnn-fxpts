@@ -5,7 +5,7 @@ import fxpt_experiments as fe
 import global_experiments as ge
 
 def prof():
-    N = 6
+    N = 8
     test_data = fe.generate_test_data(network_sizes=[N], num_samples=[1], refine_iters = 1)
     W = test_data['N_%d_W_0'%N]
     # _ = rfx.traverse(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_traverse_steps=None, max_fxpts=None, logfile=None, max_step_size=None)
