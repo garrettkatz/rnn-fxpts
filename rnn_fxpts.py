@@ -681,7 +681,8 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
         # step_size2 = traverse_step_size2(W2norm2, J, z_new) / np.linalg.norm(_W_.dot(z))
         step_size3 = traverse_step_size3(mu, J, z_new)
         # if (step % 100) == 0: print(step_size, step_size1, step_size2, step_size3)
-        if (step % 100) == 0: print(step_size, step_size3)
+        # if (step % 100) == 0: print(step_size, step_size3)
+        step_size = step_size3
         if max_step_size is not None: step_size = min(step_size, max_step_size)
         step_sizes.append(step_size)
         s_mins.append(s_min)
@@ -1195,7 +1196,13 @@ def run_solver(W, c=None):
       fiber[:,n] is the n^{th} point along the fiber encountered during traversal
     """
     # Run traverse
-    _, fxpts, fiber, _, _, _, _ = traverse(W, c=c, max_traverse_steps = 2**20)
+    # _, fxpts, fiber, _, _, _, _ = traverse(W, c=c, max_traverse_steps = 2**20)
+    fxpts, fiber = [], []
+    for iterate in directional_fiber(W, c=c, max_traverse_steps = 2**20):
+        fxpts.append(iterate[1])
+        fiber = iterate[2]
+    fxpts = np.concatenate(fxpts, axis=1)
+    fiber = np.concatenate(fiber, axis=1)
     # Post-process
     fxpts, _ = post_process_fxpts(W, fxpts)
     # Return output
@@ -1231,4 +1238,3 @@ def show_fiber(W, fxpts, fiber, savefile=None):
     if savefile is not None:
         plt.savefig(savefile)
     plt.show()
-

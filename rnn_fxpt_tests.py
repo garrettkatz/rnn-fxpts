@@ -31,4 +31,10 @@ def test_fiber_refine():
     raw_input('done')
 
 if __name__ == '__main__':
-    test_fiber_refine()
+    # test_fiber_refine()
+
+    N = 2
+    test_data = fe.generate_test_data(network_sizes=[N], num_samples=[1], refine_iters = 1)
+    W = test_data['N_%d_W_0'%N]
+    fxpts, fiber = rfx.run_solver(W)
+    rfx.show_fiber(W, fxpts, fiber)
