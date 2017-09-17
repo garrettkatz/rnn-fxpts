@@ -26,9 +26,7 @@ and so on.
 
 For more information on algorithmic details and proofs, please consult the following:
 
-Katz, G. and Reggia, J. "Towards Global Solution of the Fixed Point Equations in Attractor Neural Networks," *submitted*, 2016. [TBA](https://github.com/garrettkatz/rnn-fxpts#documentation)
-
-> *Supplemental Material*: Katz, G. and Reggia, J. "Identifying fixed points in attractor neural networks using directional fibers: Supplemental material on theoretical results and practical aspects of numerical traversal," University of Maryland, College Park, Tech. Rep. CS-TR-5051, December 2016. [TBA](https://github.com/garrettkatz/rnn-fxpts#documentation)
+[Katz, G. E., Reggia, J. A. (2017). Using Directional Fibers to Locate Fixed Points of Recurrent Neural Networks. IEEE Transactions on Neural Networks and Learning Systems (accepted). IEEE.](https://doi.org/10.1109/TNNLS.2017.2733544)
 
 ## Reproducing the Experimental Results
 
