@@ -8,6 +8,7 @@ import pickle as pkl
 import itertools as it
 import numpy as np
 import scipy.optimize as spo
+import scipy.linalg as spl
 import plotter as ptr
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -329,7 +330,12 @@ def s_min_calc(_J_):
     Returns the minimum singular value of numpy.array _J_
     """
     # return np.linalg.norm(_J_, ord=-2)
-    return np.linalg.svd(_J_, compute_uv=0)[-1] # called deep within a code branch of np.linalg.norm
+    # s_min = np.linalg.svd(_J_, compute_uv=0)[-1] # called deep within a code branch of np.linalg.norm
+    e_min = spl.eigh(_J_.T.dot(_J_), eigvals_only=True, eigvals=(0,1))[0] # slightly faster
+    # print("s_min, sqrt(e_min)")
+    # print(s_min, np.sqrt(e_min))
+    # return s_min
+    return np.sqrt(e_min)
 
 def s_max_calc(_J_):
     """
@@ -411,7 +417,8 @@ def traverse_step_size3(mu, J, z):
     """
     _J_ = np.concatenate((J, z.T), axis=0)
     s_min = s_min_calc(_J_)
-    return s_min / (2. * mu)
+    # return s_min / (2. * mu)
+    return s_min / (4. * mu)
 
 def take_traverse_step(W, I, c, va, z, step_size, max_nr_iters, nr_tol, verbose=1):
     """
@@ -644,7 +651,8 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
     _W_[:N,:N], _Winv_[:N,:N] = W, Winv
     W2norm1 = np.linalg.norm(W,ord=2)**2
     W2norm2 = np.linalg.norm(W,ord=2)*np.linalg.norm(Winv,ord=2)
-    mu = np.sqrt(16./27.) * min(np.linalg.norm(W,ord=2), np.sqrt((W*W).sum(axis=1)).max())
+    # mu = np.sqrt(16./27.) * min(np.linalg.norm(W,ord=2), np.sqrt((W*W).sum(axis=1)).max())
+    mu = np.sqrt(16./27.) * np.linalg.norm(W,ord=2) * min(np.linalg.norm(W,ord=2), np.sqrt((W*W).sum(axis=1)).max())
 
     # Termination criterion
     term = get_term(W, c)
@@ -677,6 +685,7 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
 
         # Get step size
         step_size, rho, s_min = traverse_step_size(_W_, _Winv_, D, J, va, c, z_new)
+        # step_size, rho, s_min = 0, 0, 0
         # step_size1 = traverse_step_size2(W2norm1, J, z_new)
         # step_size2 = traverse_step_size2(W2norm2, J, z_new) / np.linalg.norm(_W_.dot(z))
         step_size3 = traverse_step_size3(mu, J, z_new)
@@ -1220,7 +1229,7 @@ def show_fiber(W, fxpts, fiber, savefile=None):
         return
     mpl.rcParams['mathtext.default'] = 'regular'
     fiber = np.concatenate((-fiber[:2,::-1],fiber[:2,:]), axis=1)
-    fxpts, _ = post_process_fxpts(W, fxpts)
+    # fxpts, _ = post_process_fxpts(W, fxpts)
     plt.figure(figsize=(6,6))
     ptr.plot(plt.gca(), fiber[:2,:],'-k')
     ptr.scatter(plt.gca(), fxpts, 75, c=((0,0,0),))
@@ -1238,3 +1247,8 @@ def show_fiber(W, fxpts, fiber, savefile=None):
     if savefile is not None:
         plt.savefig(savefile)
     plt.show()
+
+if __name__ == "__main__":
+    W = 1.1*np.eye(2) + 0.1*np.random.randn(2,2)
+    fxpts, fiber = run_solver(W)
+    show_fiber(W, fxpts, fiber)
