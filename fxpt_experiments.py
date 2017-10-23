@@ -687,8 +687,9 @@ def test_TvB_stability(test_data_id, N, s, logfilename=os.devnull, save_result=F
         for j in range(fxV.shape[1]):
             rfx.hardwrite(logfile,'method %s: j = %d of %d (%d stable so far)\n'%(method_key,j,fxV.shape[1],(num_big_eigs[method_key][:j] == 0).sum()))
             # linearize
-            Df = (1-np.tanh(W.dot(fxV[:,[j]]))**2)*W - I
-            eigs, _ = np.linalg.eig(Df)
+            # Df = (1-np.tanh(W.dot(fxV[:,[j]]))**2)*W - I
+            Dm = (1-np.tanh(W.dot(fxV[:,[j]]))**2)*W # use derivative of map, not difference!
+            eigs, _ = np.linalg.eig(Dm)
             max_eigs[method_key][j] = np.absolute(eigs).max()
             num_big_eigs[method_key][j] = (np.absolute(eigs) >= 1).sum()
         avg_num_big[method_key] = num_big_eigs[method_key].astype(float).mean()
