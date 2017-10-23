@@ -28,9 +28,11 @@ For more information on algorithmic details and proofs, please consult the follo
 
 [Katz, G. E., Reggia, J. A. (2017). Using Directional Fibers to Locate Fixed Points of Recurrent Neural Networks. IEEE Transactions on Neural Networks and Learning Systems (accepted). IEEE.](https://doi.org/10.1109/TNNLS.2017.2733544)
 
+[Katz, G. E and Reggia, J. A. (2016).  Identifying Fixed Points in Recurrent Neural Networks Using Directional Fibers: Supplemental Material on Theoretical Results and Practical Aspects of Numerical Traversal.  University of Maryland, College Park, Technical Report CS-TR-5051.](http://hdl.handle.net/1903/18918)
+
 ## Reproducing the Experimental Results
 
-This repository includes all of the code needed to reproduce the figures and results reported in the foregoing references.  To run all of the experiments, invoke the ``reproduce_results.py`` script from the command line:
+Release [v1.0](https://github.com/garrettkatz/rnn-fxpts/releases/tag/v1.0) contains all of the code used to produce the figures and results reported in the foregoing references.  To run all of the experiments, invoke the ``reproduce_results.py`` script from the command line:
 
 ```shell
 $ python reproduce_results.py
