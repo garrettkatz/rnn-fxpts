@@ -8,9 +8,12 @@ import pickle as pkl
 import itertools as it
 import numpy as np
 import scipy.optimize as spo
+import scipy.linalg as spl
 import plotter as ptr
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+
+T2CONST = (np.sqrt(2.)-1.)**2 / np.sqrt(16./27.)
 
 def hardwrite(f,data):
     """
@@ -40,7 +43,36 @@ def solve(A, B):
     Returns x, where x solves Ax = B.
     Assumes A is invertible.
     """
-    return np.linalg.solve(A,B)
+    # return np.linalg.solve(A,B)
+
+    # shortened code from numpy source for np.linalg.solve:
+    # a, _ = _makearray(a)
+    # _assertRankAtLeast2(a)
+    # _assertNdSquareness(a)
+    # b, wrap = _makearray(b)
+    # t, result_t = _commonType(a, b)
+
+    # We use the b = (..., M,) logic, only if the number of extra dimensions
+    # match exactly
+    # if b.ndim == a.ndim - 1:
+    #     gufunc = _umath_linalg.solve1
+    # else:
+    #     gufunc = _umath_linalg.solve
+
+    # signature = 'DD->D' if isComplexType(t) else 'dd->d'
+    # extobj = get_linalg_error_extobj(_raise_linalgerror_singular)
+    # r = gufunc(a, b, signature=signature, extobj=extobj)
+
+    # return wrap(r.astype(result_t, copy=False))
+    
+    a, b = A, B
+    signature = 'dd->d'
+    extobj = np.linalg.linalg.get_linalg_error_extobj(np.linalg.linalg._raise_linalgerror_singular)
+    if b.ndim == a.ndim - 1:
+        r = np.linalg.linalg._umath_linalg.solve1(a, b, signature=signature, extobj=extobj)
+    else:
+        r = np.linalg.linalg._umath_linalg.solve(a, b, signature=signature, extobj=extobj)
+    return r
 
 def mrdivide(B,A):
     """
@@ -297,7 +329,20 @@ def s_min_calc(_J_):
     """
     Returns the minimum singular value of numpy.array _J_
     """
-    return np.linalg.norm(_J_, ord=-2)
+    # return np.linalg.norm(_J_, ord=-2)
+    # s_min = np.linalg.svd(_J_, compute_uv=0)[-1] # called deep within a code branch of np.linalg.norm
+    e_min = spl.eigh(_J_.T.dot(_J_), eigvals_only=True, eigvals=(0,1))[0] # slightly faster
+    # print("s_min, sqrt(e_min)")
+    # print(s_min, np.sqrt(e_min))
+    # return s_min
+    return np.sqrt(e_min)
+
+def s_max_calc(_J_):
+    """
+    Returns the maximum singular value of numpy.array _J_
+    """
+    # return np.linalg.norm(_J_, ord=2)
+    return np.linalg.svd(_J_, compute_uv=0)[0] # called deep within a code branch of np.linalg.norm
 
 def mu_calc(Wv, delta):
     """
@@ -351,6 +396,29 @@ def traverse_step_size(_W_, _Winv_, D, J, va, c, z, num_samples=16):
     theta[~idx] = 1/rho[~idx]
     max_idx = theta.flatten().argmax()
     return theta.flat[max_idx]/np.sqrt((_W_.dot(z)**2).sum()), rho.flat[max_idx], s_min
+
+def traverse_step_size2(W2norm, J, z):
+    """
+    Determines a step size simplier
+    W2norm should be the squared 2-norm of W
+    J should be DF, the Jacobian of F (an N by N+1 numpy.array)
+    z should be the tangent vector (an N+1 by 1 numpy.array)
+    """
+    _J_ = np.concatenate((J, z.T), axis=0)
+    s_min = s_min_calc(_J_)
+    return T2CONST * s_min / W2norm
+    
+def traverse_step_size3(mu, J, z):
+    """
+    Determines a step size simplier
+    W2norm should be the squared 2-norm of W
+    J should be DF, the Jacobian of F (an N by N+1 numpy.array)
+    z should be the tangent vector (an N+1 by 1 numpy.array)
+    """
+    _J_ = np.concatenate((J, z.T), axis=0)
+    s_min = s_min_calc(_J_)
+    # return s_min / (2. * mu)
+    return s_min / (4. * mu)
 
 def take_traverse_step(W, I, c, va, z, step_size, max_nr_iters, nr_tol, verbose=1):
     """
@@ -578,8 +646,13 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
 
     # Constants
     I = np.eye(N)
+    Winv = np.linalg.inv(W)
     _W_, _Winv_ = np.eye(N+1), np.eye(N+1)
-    _W_[:N,:N], _Winv_[:N,:N] = W, np.linalg.inv(W)
+    _W_[:N,:N], _Winv_[:N,:N] = W, Winv
+    W2norm1 = np.linalg.norm(W,ord=2)**2
+    W2norm2 = np.linalg.norm(W,ord=2)*np.linalg.norm(Winv,ord=2)
+    # mu = np.sqrt(16./27.) * min(np.linalg.norm(W,ord=2), np.sqrt((W*W).sum(axis=1)).max())
+    mu = np.sqrt(16./27.) * np.linalg.norm(W,ord=2) * min(np.linalg.norm(W,ord=2), np.sqrt((W*W).sum(axis=1)).max())
 
     # Termination criterion
     term = get_term(W, c)
@@ -612,6 +685,13 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
 
         # Get step size
         step_size, rho, s_min = traverse_step_size(_W_, _Winv_, D, J, va, c, z_new)
+        # step_size, rho, s_min = 0, 0, 0
+        # step_size1 = traverse_step_size2(W2norm1, J, z_new)
+        # step_size2 = traverse_step_size2(W2norm2, J, z_new) / np.linalg.norm(_W_.dot(z))
+        step_size3 = traverse_step_size3(mu, J, z_new)
+        # if (step % 100) == 0: print(step_size, step_size1, step_size2, step_size3)
+        # if (step % 100) == 0: print(step_size, step_size3)
+        step_size = step_size3
         if max_step_size is not None: step_size = min(step_size, max_step_size)
         step_sizes.append(step_size)
         s_mins.append(s_min)
@@ -1125,7 +1205,13 @@ def run_solver(W, c=None):
       fiber[:,n] is the n^{th} point along the fiber encountered during traversal
     """
     # Run traverse
-    _, fxpts, fiber, _, _, _, _ = traverse(W, c=c, max_traverse_steps = 2**20)
+    # _, fxpts, fiber, _, _, _, _ = traverse(W, c=c, max_traverse_steps = 2**20)
+    fxpts, fiber = [], []
+    for iterate in directional_fiber(W, c=c, max_traverse_steps = 2**20):
+        fxpts.append(iterate[1])
+        fiber = iterate[2]
+    fxpts = np.concatenate(fxpts, axis=1)
+    fiber = np.concatenate(fiber, axis=1)
     # Post-process
     fxpts, _ = post_process_fxpts(W, fxpts)
     # Return output
@@ -1143,7 +1229,7 @@ def show_fiber(W, fxpts, fiber, savefile=None):
         return
     mpl.rcParams['mathtext.default'] = 'regular'
     fiber = np.concatenate((-fiber[:2,::-1],fiber[:2,:]), axis=1)
-    fxpts, _ = post_process_fxpts(W, fxpts)
+    # fxpts, _ = post_process_fxpts(W, fxpts)
     plt.figure(figsize=(6,6))
     ptr.plot(plt.gca(), fiber[:2,:],'-k')
     ptr.scatter(plt.gca(), fxpts, 75, c=((0,0,0),))
@@ -1162,3 +1248,7 @@ def show_fiber(W, fxpts, fiber, savefile=None):
         plt.savefig(savefile)
     plt.show()
 
+if __name__ == "__main__":
+    W = 1.1*np.eye(2) + 0.1*np.random.randn(2,2)
+    fxpts, fiber = run_solver(W)
+    show_fiber(W, fxpts, fiber)

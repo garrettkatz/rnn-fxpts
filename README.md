@@ -26,13 +26,13 @@ and so on.
 
 For more information on algorithmic details and proofs, please consult the following:
 
-Katz, G. and Reggia, J. "Towards Global Solution of the Fixed Point Equations in Attractor Neural Networks," *submitted*, 2016. [TBA](https://github.com/garrettkatz/rnn-fxpts#documentation)
+[Katz, G. E., Reggia, J. A. (2017). Using Directional Fibers to Locate Fixed Points of Recurrent Neural Networks. IEEE Transactions on Neural Networks and Learning Systems (accepted). IEEE.](https://doi.org/10.1109/TNNLS.2017.2733544)
 
-> *Supplemental Material*: Katz, G. and Reggia, J. "Identifying fixed points in attractor neural networks using directional fibers: Supplemental material on theoretical results and practical aspects of numerical traversal," University of Maryland, College Park, Tech. Rep. CS-TR-5051, December 2016. [TBA](https://github.com/garrettkatz/rnn-fxpts#documentation)
+[Katz, G. E and Reggia, J. A. (2016).  Identifying Fixed Points in Recurrent Neural Networks Using Directional Fibers: Supplemental Material on Theoretical Results and Practical Aspects of Numerical Traversal.  University of Maryland, College Park, Technical Report CS-TR-5051.](http://hdl.handle.net/1903/18918)
 
 ## Reproducing the Experimental Results
 
-This repository includes all of the code needed to reproduce the figures and results reported in the foregoing references.  To run all of the experiments, invoke the ``reproduce_results.py`` script from the command line:
+Release [v1.0](https://github.com/garrettkatz/rnn-fxpts/releases/tag/v1.0) contains all of the code used to produce the figures and results reported in the foregoing references.  To run all of the experiments, invoke the ``reproduce_results.py`` script from the command line:
 
 ```shell
 $ python reproduce_results.py
