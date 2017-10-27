@@ -30,6 +30,12 @@ For more information on algorithmic details and proofs, please consult the follo
 
 [Katz, G. E and Reggia, J. A. (2016).  Identifying Fixed Points in Recurrent Neural Networks Using Directional Fibers: Supplemental Material on Theoretical Results and Practical Aspects of Numerical Traversal.  University of Maryland, College Park, Technical Report CS-TR-5051.](http://hdl.handle.net/1903/18918)
 
+Release [v1.0](https://github.com/garrettkatz/rnn-fxpts/releases/tag/v1.0) contains all of the code used to produce the figures and results reported in the foregoing references.
+
+### Errata
+
+After publication of the foregoing references, a methodological flaw was discovered in the stability analysis.  In particular, stability was incorrectly measured using the eigenvalues of *Df*, where *f(v) = tanh(Wv) - v*.  This can sometimes falsely classify stable fixed points as unstable and vice versa.  Instead, stability should have been measured using *Dm*, where *m(v) = tanh(Wv)*.  This correction has been made in the latest version of the code (as of [this commit](https://github.com/garrettkatz/rnn-fxpts/commit/df761d993b3ba83026b01f1550babb6075cdb1fa)).  As it happens, there were no substantial qualitative changes to the results or conclusions as a whole, although there were some minor quantitative differences.
+
 ## Reproducing the Experimental Results
 
 Release [v1.0](https://github.com/garrettkatz/rnn-fxpts/releases/tag/v1.0) contains all of the code used to produce the figures and results reported in the foregoing references.  To run all of the experiments, invoke the ``reproduce_results.py`` script from the command line:
