@@ -418,7 +418,7 @@ def traverse_step_size3(mu, J, z):
     _J_ = np.concatenate((J, z.T), axis=0)
     s_min = s_min_calc(_J_)
     # return s_min / (2. * mu)
-    return s_min / (4. * mu)
+    return s_min / (4. * mu), s_min
 
 def take_traverse_step(W, I, c, va, z, step_size, max_nr_iters, nr_tol, verbose=1):
     """
@@ -646,7 +646,8 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
 
     # Constants
     I = np.eye(N)
-    Winv = np.linalg.inv(W)
+    # Winv = np.linalg.inv(W)
+    Winv = np.eye(N)
     _W_, _Winv_ = np.eye(N+1), np.eye(N+1)
     _W_[:N,:N], _Winv_[:N,:N] = W, Winv
     W2norm1 = np.linalg.norm(W,ord=2)**2
@@ -684,11 +685,11 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
         z_new = calc_z_new(J, z)
 
         # Get step size
-        step_size, rho, s_min = traverse_step_size(_W_, _Winv_, D, J, va, c, z_new)
+        # step_size, rho, s_min = traverse_step_size(_W_, _Winv_, D, J, va, c, z_new)
         # step_size, rho, s_min = 0, 0, 0
         # step_size1 = traverse_step_size2(W2norm1, J, z_new)
         # step_size2 = traverse_step_size2(W2norm2, J, z_new) / np.linalg.norm(_W_.dot(z))
-        step_size3 = traverse_step_size3(mu, J, z_new)
+        step_size3, s_min = traverse_step_size3(mu, J, z_new)
         # if (step % 100) == 0: print(step_size, step_size1, step_size2, step_size3)
         # if (step % 100) == 0: print(step_size, step_size3)
         step_size = step_size3
@@ -709,7 +710,7 @@ def directional_fiber(W, va=None, c=None, max_nr_iters=2**8, nr_tol=2**-32, max_
         if origin or sign_change or local_min:
             B = -3 if local_min else -2
             for b in range(B,0):
-                refinement =  refine_fiber_fxpt(W, _W_, _Winv_, c, VA[b].copy(), z,
+                refinement =  refine_fiber_fxpt2(W, _W_, c, VA[b].copy(), z,
                     max_nr_iters=max_nr_iters, nr_tol=nr_tol, max_step_size=max_step_size,
                     max_refine_steps=max_refine_steps, stop_time=stop_time, logfile=logfile)
                 _, fxv, _, _, _, _ = refinement
@@ -803,6 +804,93 @@ def refine_fiber_fxpt(W, _W_, _Winv_, c, va, z, max_nr_iters=2**8, nr_tol=2**-32
         step_size, rho, s_min = traverse_step_size(_W_, _Winv_, D, J, va, c, z_new)
         newton_step_size = -va[N]/z_new[N]
         step_size = min(step_size, newton_step_size)
+        if max_step_size is not None: step_size = min(step_size, max_step_size)
+        step_sizes.append(step_size)
+        s_mins.append(s_min)
+
+        # Take step
+        va_new, F_new = take_traverse_step(W, I, c, va, z_new, step_size, max_nr_iters, nr_tol)
+        residuals.append(np.fabs(F_new).max())
+        va = va_new
+        z = z_new
+
+        # Check convergence
+        fixed, margin = fixed_within_eps(W, va[:N,:])
+        if fixed.all():
+            status = "Converged"
+            break
+
+        # Early termination criteria
+        if max_refine_steps is not None and step >= max_refine_steps:
+            status = "Max refine steps reached"
+            break
+        if stop_time is not None and time.clock() > stop_time:
+            status = "Timed out"
+            break
+
+        if (step % 10) == 0 and logfile is not None:
+            hardwrite(logfile,'refine iteration %d of %s,step_size=%f,s_min=%e,resid/margin:%e\n'%(step,max_refine_steps,step_size,s_min,(F_new/margin).max()))
+
+    # final output
+    fxv = va[:N,:].copy()
+    return status, fxv, VA, step_sizes, s_mins, residuals
+
+def refine_fiber_fxpt2(W, _W_, c, va, z, max_nr_iters=2**8, nr_tol=2**-32, max_step_size=None, max_refine_steps=None, stop_time=None, logfile=None):
+    """
+    Newton's method within the fiber to refine a candidate fixed points
+    W is the weight matrix (N by N numpy.array)
+    _W_, _Winv_ are the auxiliary weight matrices from directional_fiber
+    c is the direction vector (N by 1 numpy.array)
+    va is the initial candidate point (N+1 by 1 numpy.array)
+    z is the initial fiber tangent vector (N+1 by 1 numpy.array)
+    max_nr_iters is the maximum inner iterations allowed for Newton-Raphson refinement back to the fiber
+    nr_tol is the tolerance at which Newton-Raphson refinement back to the fiber can terminate
+    max_step_size is a maximum step size to use for each step
+      if None, no limit is imposed on the return value of traverse_step_size
+    max_refine_steps is the maximum number of outer steps allowed for fixed point refinement
+      if None, refinement continues until another termination criteria is met
+    stop_time is a clock time (compared with time.clock()) at which refinement is terminated
+      if None, refinement continues until another termination criteria is met
+    logfile is a file object open for writing that records progress
+      if None, no progress is recorded
+
+    returns status, fxv, VA, step_sizes, s_mins, residuals, where
+      status is one of
+        "Refining", "Converged", "Max refine steps reached", "Timed out"
+      fxv is the refined fixed point
+      VA[:,n] is the n^{th} point along the fiber during refinement
+      step_sizes[n] is the step size used for the n^{th} step during refinement
+      s_mins[n] is the minimum singular value of DF at the n^{th} step during refinement
+      residuals[n] is the infinity-norm of F at the n^{th} step during refinement
+    """
+
+    # Constants
+    N = W.shape[0]
+    I = np.eye(N)
+    mu = np.sqrt(16./27.) * np.linalg.norm(W,ord=2) * min(np.linalg.norm(W,ord=2), np.sqrt((W*W).sum(axis=1)).max())
+
+    # Traverse
+    VA = []
+    step_sizes = []
+    s_mins = []
+    residuals = []
+    status = "Refining"
+    for step in it.count(0):
+
+        # Save fiber
+        VA.append(va)
+
+        # Update quantities
+        D = 1 - np.tanh(W.dot(va[:N,:]))**2
+        J = np.concatenate((D*W - I, -c), axis=1)
+
+        z_new = calc_z_new(J, z)
+
+        # Get step size
+        # step_size, rho, s_min = traverse_step_size(_W_, _Winv_, D, J, va, c, z_new)
+        step_size3, s_min = traverse_step_size3(mu, J, z_new)
+        newton_step_size = -va[N]/z_new[N]
+        step_size = min(step_size3, newton_step_size)
         if max_step_size is not None: step_size = min(step_size, max_step_size)
         step_sizes.append(step_size)
         s_mins.append(s_min)
