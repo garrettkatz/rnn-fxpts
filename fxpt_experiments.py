@@ -880,10 +880,13 @@ def show_tvb_stab_result(test_data_id='full_base', N=24, s=0):
     # plt.scatter(npz['norms_traverse'],npz['num_big_eigs_traverse']+.5+tr,c='k',marker='+',s=ms)
     t_idx = np.random.rand(*npz['norms_traverse'].shape) < .05
     b_idx = np.random.rand(*npz['norms_baseline'].shape) < .05
+    # t_idx = np.arange(len(npz['norms_traverse']))
+    # b_idx = np.arange(len(npz['norms_baseline']))
     # npz['max_eigs_%s'%method_key] = max_eigs[method_key]
-    plt.scatter(npz['norms_baseline'][b_idx],npz['max_eigs_baseline'][b_idx],c='',marker='o',s=ms)
-    plt.scatter(npz['norms_traverse'][t_idx],npz['max_eigs_traverse'][t_idx],c='k',marker='+',s=ms)
-    plt.legend(['B','T'],loc='upper left',fontsize=16)
+    plt.scatter(npz['norms_baseline'][b_idx],npz['max_eigs_baseline'][b_idx],marker='o',s=ms,edgecolors='k',facecolors='none')
+    plt.scatter(npz['norms_traverse'][t_idx],npz['max_eigs_traverse'][t_idx],marker='+',c='k',s=ms)
+    lgd = plt.legend(['B','T'],loc='lower left',fontsize=16)
+    lgd.get_frame().set_edgecolor('k')
     norm_max = max(npz['norms_baseline'].max(),npz['norms_traverse'].max())
     plt.xlim([-.1*norm_max,1.1*norm_max])
     # plt.ylim([-1,15])
@@ -903,10 +906,11 @@ def show_tvb_stab_result(test_data_id='full_base', N=24, s=0):
     # plt.ylabel('# of fixed points')
     bs = npz['max_eigs_baseline'] < 1 
     ts = npz['max_eigs_traverse'] < 1 
-    plt.hist([npz['norms_baseline'][bs],npz['norms_traverse'][ts],npz['norms_baseline'][~bs],npz['norms_traverse'][~ts]],color=np.array([[0.0,0.33,0.66,1.0]]).T*np.ones((1,3)),bins=range(int(np.ceil(norm_max+1))),align='mid')
+    plt.hist([npz['norms_baseline'][bs],npz['norms_traverse'][ts],npz['norms_baseline'][~bs],npz['norms_traverse'][~ts]],color=np.array([[0.0,0.33,0.66,1.0]]).T*np.ones((1,3)),bins=range(int(np.ceil(norm_max+1))),align='mid',edgecolor='k')
     # plt.hist([npz['norms_baseline'][bs],npz['norms_traverse'][ts],npz['norms_baseline'][~bs],npz['norms_traverse'][~ts]],bins=range(int(np.ceil(norm_max+1))),align='mid')
     plt.xlim([0,np.ceil(norm_max)])
-    plt.legend(['B st','T st','B un','T un'],loc='upper left',fontsize=16)
+    lgd = plt.legend(['B st','T st','B un','T un'],loc='upper left',fontsize=16)
+    lgd.get_frame().set_edgecolor('k')
     plt.xlabel('Norm')
     plt.ylabel('# of fixed points')
     plt.gca().set_yscale('log',basey=2)
