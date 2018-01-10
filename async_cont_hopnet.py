@@ -3,7 +3,7 @@ import sys
 
 
 class Hopnet:
-    def __init__(self, N, gain=1.0, stochastic=False):
+    def __init__(self, n, gain=1.0, stochastic=False):
         """Initialize an asynchronous Hopnet"""
 
         self.n = n
