@@ -26,7 +26,7 @@ and so on.
 
 For more information on algorithmic details and proofs, please consult the following:
 
-[Katz, G. E., Reggia, J. A. (2017). Using Directional Fibers to Locate Fixed Points of Recurrent Neural Networks. IEEE Transactions on Neural Networks and Learning Systems (accepted). IEEE.](https://doi.org/10.1109/TNNLS.2017.2733544) [\[preprint here](https://www.cs.umd.edu/~gkatz/TNNLS-2016-P-7293.R2.pdf)\]
+[Katz, G. E., Reggia, J. A. (2017). Using Directional Fibers to Locate Fixed Points of Recurrent Neural Networks. IEEE Transactions on Neural Networks and Learning Systems (accepted). IEEE.](https://doi.org/10.1109/TNNLS.2017.2733544) (Here's a [preprint](https://www.cs.umd.edu/~gkatz/TNNLS-2016-P-7293.R2.pdf))
 
 [Katz, G. E and Reggia, J. A. (2016).  Identifying Fixed Points in Recurrent Neural Networks Using Directional Fibers: Supplemental Material on Theoretical Results and Practical Aspects of Numerical Traversal.  University of Maryland, College Park, Technical Report CS-TR-5051.](http://hdl.handle.net/1903/18918)
 
