@@ -204,6 +204,7 @@ def identical_fixed_points(W, V, v, Winv=None):
       RD[p]: the relative distance from V[:,p] to v (as a multiple of R)
       R: the radius around v past which another fixed point is considered distinct
     """
+    print("WARNING: using obsolete duplicate method!")
     if Winv is None: Winv = np.linalg.inv(W)
     # sig'' has a maximum of sqrt(16/27) obtained at input arctanh(sqrt(1/3))
     N = W.shape[0]
@@ -1278,24 +1279,26 @@ def post_process_fxpts(W, fxV, logfile=None, refine_cap=10000, Winv=None, neighb
     fxV = np.concatenate((-fxV, np.zeros((N,1)), fxV),axis=1)
     if logfile is not None: hardwrite(logfile,'Uniqueing fxpts...\n')
     if neighbors is None:
-        neighbors = lambda X, y: identical_fixed_points(W, X, y, Winv)[0]
+        # neighbors = lambda X, y: identical_fixed_points(W, X, y, Winv)[0] # complicated method
+        neighbors = lambda X, y: (np.fabs(X-y) < 2**-21).all(axis=0) # simpler, more effective method
     fxV_unique = get_unique_points_recursively(fxV, neighbors=neighbors)
     return fxV_unique, fxV
 
-def run_solver(W, c=None):
+def run_solver(W, c=None, **kwargs):
     """
     Convenience wrapper for the traverse algorithm with post-processing.
     W should be the weight matrix (N by N numpy.array)
     c should be the direction vector (N by 1 numpy.array)
       if None, c is chosen randomly
+    kwargs get passed to traversal
     returns fxpts, fiber, where
       fxpts[:,p] is the p^{th} fixed point found
       fiber[:,n] is the n^{th} point along the fiber encountered during traversal
     """
     # Run traverse
-    # _, fxpts, fiber, _, _, _, _ = traverse(W, c=c, max_traverse_steps = 2**20)
     fxpts, fiber = [], []
-    for iterate in directional_fiber(W, c=c, max_traverse_steps = 2**20):
+    if "max_traverse_steps" not in kwargs: kwargs["max_traverse_steps"] = 2**20
+    for iterate in directional_fiber(W, c=c, **kwargs):
         fxpts.append(iterate[1])
         fiber = iterate[2]
     fxpts = np.concatenate(fxpts, axis=1)
