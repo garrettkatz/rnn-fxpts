@@ -1,3 +1,9 @@
+# Note
+
+A newer and more general version of this software is available here:
+
+[https://github.com/garrettkatz/directional-fibers](https://github.com/garrettkatz/directional-fibers)
+
 # rnn-fxpts
 
 `rnn-fxpts` is a fixed point solver for discrete-time, continuous-valued, Hopfield-type recurrent neural networks with arbitrary connectivity, written in Python.
